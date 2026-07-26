@@ -1,6 +1,6 @@
 {
-  "versionCode": 2,
-  "versionName": "1.0.1",
-  "note": "（测试用：当前手机 App 是 v1.0.0，这里写 2 是为了让你看到「进入即弹更新」的弹窗。看到后点「稍后再说」，并让我把 versionCode 改回 1，或发真正的新版。）发布真新版步骤：1) 用 VC=2 VN=1.0.1 bash build_apk.sh 重新打包；2) 把新 app-debug.apk 改名为带版本号的文件（如 wei-1.0.1.apk）上传到本仓库根目录；3) 把下面的 versionCode 改成 2、versionName 改成 1.0.1、apkUrl 改成该文件的 jsDelivR 直链；4) 提交即可，App 会自动检测到。",
+  "versionCode": 1,
+  "versionName": "1.0.0",
+  "note": "当前正式版。发布真新版步骤：1) 用 VC=2 VN=1.0.1 bash build_apk.sh 重新打包；2) 把新 app-debug.apk 改名为带版本号的文件（如 wei-1.0.1.apk）上传到本仓库根目录；3) 把下面的 versionCode 改成对应数字、versionName 改成对应版本、apkUrl 改成该文件的 jsDelivR 直链；4) 提交即可，App 启动会自动检测并弹窗。",
   "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@main/app-debug.apk"
 }
