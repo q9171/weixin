@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<title>威信</title>
+<style>
+  :root{
+    --bg:#0e1621; --panel:#17212b; --panel2:#1d2a38; --accent:#2ea6ff;
+    --me:#2ea6ff; --me-text:#fff; --other:#242f3d; --other-text:#e9edf0;
+    --muted:#7c8b99; --line:#22303f;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:#e9edf0}
+  #app{display:flex;flex-direction:column;height:100%;height:100dvh;max-width:720px;margin:0 auto;background:var(--bg)}
+
+  .top{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--panel);border-bottom:1px solid var(--line);padding-top:max(12px,env(safe-area-inset-top))}
+  .top .title{font-size:15.5px;font-weight:600}
+  .top .sub{font-size:11.5px;color:var(--muted)}
+  .top .status{margin-left:auto;display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted)}
+  .status .led{width:8px;height:8px;border-radius:50%;background:#5a6b7a}
+  .status.ok .led{background:#3ddc84;box-shadow:0 0 6px #3ddc84}
+  .status.bad .led{background:#ff5b5b}
+  .gear{margin-left:auto;background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:4px 6px}
+
+  /* 频道列表 */
+  #channels{display:none;flex-direction:column;height:100%;height:100dvh}
+  .chanlist{flex:1;overflow-y:auto;padding:12px}
+  .chan{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
+  .chan-info{flex:1;min-width:0}
+  .chan-title{font-size:15px;font-weight:600;word-break:break-all}
+  .chan-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
+  .chan-enter{background:var(--accent);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
+  .chan-del{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 6px;line-height:1}
+  .fab{margin:0 14px 14px;padding:13px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;margin-bottom:max(14px,env(safe-area-inset-bottom))}
+  .empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px;line-height:1.6}
+
+  /* 新建频道 */
+  #join{display:none;position:fixed;inset:0;background:linear-gradient(160deg,#0e1621,#17212b 60%,#1d2a38);align-items:center;justify-content:center;padding:24px;z-index:30}
+  .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
+  .logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}
+  .logo .dot{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#2ea6ff,#1e7fd6);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .logo h1{font-size:21px;margin:0;letter-spacing:.5px}
+  .logo p{margin:2px 0 0;font-size:12px;color:var(--muted)}
+  label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
+  input{width:100%;padding:13px 14px;border-radius:11px;border:1px solid var(--line);background:var(--panel2);color:#fff;font-size:15px;outline:none}
+  input:focus{border-color:var(--accent)}
+  .hint{font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.5}
+  .btn{width:100%;margin-top:18px;padding:13px;border:none;border-radius:11px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer}
+
+  /* 聊天 */
+  #chat{display:none;flex-direction:column;height:100%;height:100dvh}
+  .top .back{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:6px 4px;margin-right:4px}
+  #msgs{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;background:var(--bg)}
+  .row{display:flex;flex-direction:column;max-width:78%}
+  .row.me{align-self:flex-end;align-items:flex-end}
+  .row.other{align-self:flex-start;align-items:flex-start}
+  .name{font-size:11px;color:var(--muted);margin:0 6px 3px}
+  .bubble{padding:9px 12px;border-radius:14px;font-size:14.5px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap}
+  .row.me .bubble{background:var(--me);color:var(--me-text);border-bottom-right-radius:4px}
+  .row.other .bubble{background:var(--other);color:var(--other-text);border-bottom-left-radius:4px}
+  .meta{font-size:10px;color:var(--muted);margin:3px 6px 0}
+  .sys{align-self:center;font-size:11.5px;color:var(--muted);background:var(--panel2);padding:4px 10px;border-radius:10px;margin:2px 0}
+  .typing{align-self:flex-start;font-size:11.5px;color:var(--muted);padding:2px 6px;height:16px}
+  .compose{display:flex;gap:8px;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))}
+  .compose input{flex:1;background:var(--panel2);border-radius:20px;padding:11px 16px}
+  .compose .send{width:46px;min-width:46px;border:none;border-radius:50%;background:var(--accent);color:#fff;font-size:18px;cursor:pointer}
+
+  /* 设置 */
+  #settings{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;padding:24px;z-index:25}
+  #settings .card{max-width:360px}
+  .card h2{margin:0 0 6px;font-size:16px}
+  .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#000a;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;z-index:40;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* 自动更新横幅 */
+  #updateBanner{display:none;position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));background:linear-gradient(135deg,#2ea6ff,#1e7fd6);color:#fff;border-radius:14px;padding:13px 16px;font-size:13.5px;z-index:45;box-shadow:0 10px 30px rgba(0,0,0,.4);cursor:pointer}
+  #updateBanner b{font-size:14.5px}
+  #updateBanner small{display:block;opacity:.85;margin-top:2px}
+
+  /* 更新区域 */
+  .ver{font-size:12px;color:var(--muted);margin:-2px 0 4px}
+  .upd{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5}
+  .upd.has{border:1px solid var(--accent);color:var(--accent);background:rgba(46,166,255,.08);border-radius:10px;padding:10px 12px}
+  .upd .pname{font-weight:600;color:#fff}
+  .progress{height:7px;border-radius:6px;background:var(--panel2);overflow:hidden;margin-top:8px;display:none}
+  .progress > i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
+
+  /* 音效开关 */
+  .switchRow{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:#e9edf0;margin-bottom:6px}
+  .switch{position:relative;display:inline-block;width:44px;height:24px;flex:none}
+  .switch input{opacity:0;width:0;height:0}
+  .slider{position:absolute;cursor:pointer;inset:0;background:#3a4a5a;border-radius:24px;transition:.2s}
+  .slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+  .switch input:checked + .slider{background:var(--accent)}
+  .switch input:checked + .slider:before{transform:translateX(20px)}
+
+  /* 交互特效 */
+  .btn,.fab,.chan-enter,.send,.gear{transition:transform .08s ease}
+  .btn:active,.fab:active,.chan-enter:active,.send:active,.gear:active{transform:scale(.96)}
+  @keyframes inMe{from{opacity:0;transform:translateX(20px) scale(.96)}to{opacity:1;transform:none}}
+  @keyframes inOther{from{opacity:0;transform:translateX(-20px) scale(.96)}to{opacity:1;transform:none}}
+  .row.me.enter{animation:inMe .22s ease-out}
+  .row.other.enter{animation:inOther .22s ease-out}
+  @keyframes ringFlash{0%{box-shadow:0 0 0 0 rgba(46,166,255,0)}30%{box-shadow:0 0 0 4px rgba(46,166,255,.55)}100%{box-shadow:0 0 0 0 rgba(46,166,255,0)}}
+  .row.other.enter .bubble{animation:ringFlash .6s ease-out}
+  @keyframes sysPop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
+  .sys.enter{animation:sysPop .25s ease-out}
+  @keyframes bannerPulse{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.4)}50%{box-shadow:0 10px 42px rgba(46,166,255,.55)}}
+  #updateBanner{animation:bannerPulse 2.4s ease-in-out infinite}
+  @media (prefers-reduced-motion: reduce){
+    .row.me.enter,.row.other.enter,.row.other.enter .bubble,.sys.enter,#updateBanner{animation:none!important}
+    .btn:active,.fab:active,.chan-enter:active,.send:active,.gear:active{transform:none}
+  }
+
+  /* 自动更新弹窗（进入 App 时弹出） */
+  #autoUpdateModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:24px;z-index:50}
+  #autoUpdateModal .aum-card{width:100%;max-width:340px;background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:26px 22px;text-align:center;box-shadow:0 20px 60px rgba(0,0,0,.5);animation:aumPop .28s ease-out}
+  @keyframes aumPop{from{opacity:0;transform:scale(.9) translateY(10px)}to{opacity:1;transform:none}}
+  .aum-icon{font-size:34px;margin-bottom:6px}
+  .aum-title{font-size:18px;font-weight:700;margin-bottom:8px}
+  .aum-note{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:18px;max-height:120px;overflow:auto}
+  #aumUpdate{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#2ea6ff,#1e7fd6);color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;transition:transform .08s}
+  #aumUpdate:active{transform:scale(.97)}
+  .aum-later{display:block;width:100%;margin-top:12px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer}
+  @media (prefers-reduced-motion: reduce){#autoUpdateModal .aum-card{animation:none!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- 频道列表（首页） -->
+  <div id="channels">
+    <div class="top">
+      <div>
+        <div class="title">威信 · 频道</div>
+        <div class="sub">选择一个频道进入</div>
+      </div>
+      <button class="gear" id="gearC">⚙</button>
+    </div>
+    <div id="chanList" class="chanlist"></div>
+    <button class="fab" id="newChanBtn">＋ 新建频道</button>
+  </div>
+
+  <!-- 新建频道 -->
+  <div id="join">
+    <div class="card">
+      <div class="logo"><div class="dot">💬</div><div><h1>威信</h1><p>输入频道号，加入聊天</p></div></div>
+      <label>频道号（双方填一样的）</label>
+      <input id="roomInput" placeholder="例如：abc-123" autocomplete="off" />
+      <label>你的昵称</label>
+      <input id="nameInput" placeholder="例如：小明" autocomplete="off" />
+      <button class="btn" id="joinBtn">加入频道</button>
+      <div class="hint">频道号就是你们之间的暗号，只有知道它的人才能看到消息。服务器为公共中转，消息不长期留存。</div>
+    </div>
+  </div>
+
+  <!-- 聊天 -->
+  <div id="chat">
+    <div class="top">
+      <button class="back" id="exitBtn">← 频道</button>
+      <div>
+        <div class="title" id="roomTitle">频道</div>
+        <div class="sub" id="onlineSub">在线人数：1</div>
+      </div>
+      <div class="status" id="status"><span class="led"></span><span id="statusText">连接中…</span></div>
+    </div>
+    <div id="msgs"></div>
+    <div class="typing" id="typing"></div>
+    <div class="compose">
+      <input id="msgInput" placeholder="说点什么…" autocomplete="off" />
+      <button class="send" id="sendBtn">➤</button>
+    </div>
+  </div>
+
+  <!-- 设置 -->
+  <div id="settings">
+    <div class="card" style="position:relative">
+      <button class="close" id="setClose">✕</button>
+      <h2>设置</h2>
+      <div class="switchRow"><span>交互音效</span><label class="switch"><input type="checkbox" id="soundToggle" checked /><span class="slider"></span></label></div>
+      <label>中转服务器 (WSS)</label>
+      <input id="brokerInput" autocomplete="off" />
+      <div class="hint">默认公共服务器 broker.emqx.io。如连接不稳定可改用 wss://test.mosquitto.org:8081</div>
+      <button class="btn" id="saveBroker">保存并重连</button>
+
+      <div style="height:1px;background:var(--line);margin:18px 0"></div>
+      <label>界面地址 (UI URL，留空用本地)</label>
+      <input id="uiUrlInput" autocomplete="off" placeholder="https://cdn.jsdelivr.net/gh/用户名/仓库@main/index.html" />
+      <div class="hint">填了就从该网址加载聊天界面，以后更新界面无需重装 App。留空则使用 App 内置界面（断网可用）。</div>
+      <button class="btn" id="saveUiUrl" style="background:#2f3e4d">保存界面地址</button>
+      <button class="btn" id="resetUiUrl" style="background:#4d2f2f;margin-top:10px">恢复本地内置界面</button>
+
+      <div style="height:1px;background:var(--line);margin:18px 0"></div>
+      <h2>应用更新</h2>
+      <div class="ver" id="verLabel">当前版本：—</div>
+      <label>更新检查地址 (version.json)</label>
+      <input id="updateUrlInput" autocomplete="off" placeholder="https://cdn.jsdelivr.net/gh/用户名/仓库@main/version.json" />
+      <div class="hint">把更新信息文件放在本地址。留空用默认地址。改完点「保存更新地址」。</div>
+      <button class="btn" id="saveUpdateUrl" style="background:#2f3e4d">保存更新地址</button>
+      <button class="btn" id="checkUpdateBtn" style="margin-top:10px">检查更新</button>
+      <div class="upd" id="updateResult" style="display:none"></div>
+      <div class="progress" id="updProgress"><i></i></div>
+    </div>
+  </div>
+
+  <!-- 自动更新横幅 -->
+  <div id="updateBanner">
+    <b>发现新版本</b>
+    <small id="bannerText">点击更新</small>
+  </div>
+
+  <!-- 进入 App 时自动弹出的更新弹窗 -->
+  <div id="autoUpdateModal">
+    <div class="aum-card">
+      <div class="aum-icon">📲</div>
+      <div class="aum-title">发现新版本 v<span id="aumVer">?</span></div>
+      <div class="aum-note" id="aumNote"></div>
+      <button id="aumUpdate">立即更新</button>
+      <button class="aum-later" id="aumLater">稍后再说</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+</div>
+
+<script src="mqtt.min.js"></script>
+<script>
+(function(){
+  var $ = function(id){ return document.getElementById(id); };
+  var mqtt = window.mqtt;
+  var client = null, room = '', me = '', broker = 'wss://broker.emqx.io:8084/mqtt';
+  var topicBase = function(r){ return 'roomchat/' + r; };
+  var presenceTopic = function(r){ return 'roomchat/' + r + '/presence'; };
+  var onlineSet = {};
+  var channels = [];
+
+  function toast(msg){
+    var t = $('toast'); t.textContent = msg; t.classList.add('show');
+    setTimeout(function(){ t.classList.remove('show'); }, 1800);
+  }
+  function sanitize(s){ return (s||'').trim().toLowerCase().replace(/[^a-z0-9_\-]/g,''); }
+
+  // ---------- 交互音效（Web Audio 合成，无需音频文件） ----------
+  var Sound = (function(){
+    var ctx = null, enabled = true;
+    function ensure(){
+      if(!ctx){
+        try{ var AC = window.AudioContext || window.webkitAudioContext; if(AC) ctx = new AC(); }catch(e){}
+      }
+      if(ctx && ctx.state === 'suspended'){ try{ ctx.resume(); }catch(e){} }
+      return ctx;
+    }
+    function blip(freq, dur, type, vol, when){
+      var c = ensure(); if(!c) return;
+      var t0 = c.currentTime + (when||0);
+      var o = c.createOscillator(), g = c.createGain();
+      o.type = type || 'sine';
+      o.frequency.setValueAtTime(freq, t0);
+      g.gain.setValueAtTime(0.0001, t0);
+      g.gain.exponentialRampToValueAtTime(vol || 0.07, t0 + 0.01);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(c.destination);
+      o.start(t0); o.stop(t0 + dur + 0.02);
+    }
+    return {
+      setEnabled:function(v){ enabled = !!v; },
+      isEnabled:function(){ return enabled; },
+      resume:function(){ ensure(); },
+      tap:function(){ if(!enabled) return; blip(1180, 0.03, 'square', 0.022); },
+      send:function(){ if(!enabled) return; blip(620, 0.09, 'triangle', 0.07); blip(960, 0.10, 'triangle', 0.05, 0.05); },
+      receive:function(){ if(!enabled) return; blip(523, 0.10, 'sine', 0.06); blip(784, 0.13, 'sine', 0.05, 0.06); },
+      update:function(){ if(!enabled) return; blip(659, 0.12, 'sine', 0.06); blip(880, 0.16, 'sine', 0.06, 0.10); blip(1175, 0.18, 'sine', 0.05, 0.22); }
+    };
+  })();
+  function loadSound(){
+    try{
+      var v = localStorage.getItem('rc_sound');
+      Sound.setEnabled(v === null ? true : (v === '1'));
+    }catch(e){ Sound.setEnabled(true); }
+    var t = $('soundToggle'); if(t) t.checked = Sound.isEnabled();
+  }
+
+  // ---------- 持久化 ----------
+  function loadPrefs(){
+    try{
+      var b = localStorage.getItem('rc_broker'); if(b) broker = b;
+      var c = localStorage.getItem('rc_channels'); if(c) channels = JSON.parse(c) || [];
+      var n = localStorage.getItem('rc_name'); if(n) $('nameInput').value = n;
+    }catch(e){}
+    $('brokerInput').value = broker;
+    try{
+      var b2 = (window.RoomChat) ? window.RoomChat : null;
+      if(b2 && b2.getUiUrl){ $('uiUrlInput').value = b2.getUiUrl() || ''; }
+    }catch(e){}
+  }
+  function saveChannels(){ try{ localStorage.setItem('rc_channels', JSON.stringify(channels)); }catch(e){} }
+  function findChannel(r){ for(var i=0;i<channels.length;i++){ if(channels[i].room===r) return channels[i]; } return null; }
+  function addChannel(r, n){
+    r = sanitize(r);
+    var ch = findChannel(r);
+    if(ch){ ch.name = n; } else { channels.push({room:r, name:n}); }
+    saveChannels();
+  }
+  function removeChannel(r){
+    channels = channels.filter(function(c){ return c.room !== r; });
+    saveChannels();
+  }
+
+  // ---------- 界面切换 ----------
+  function hideAll(){ ['channels','join','chat'].forEach(function(id){ $(id).style.display='none'; }); }
+  function showHome(){
+    hideAll();
+    if(channels.length){ renderChannels(); $('channels').style.display='flex'; }
+    else { $('join').style.display='flex'; }
+  }
+  function renderChannels(){
+    var list = $('chanList'); list.innerHTML='';
+    if(!channels.length){
+      list.innerHTML = '<div class="empty">还没有频道。<br>点下方「新建频道」输入频道号加入吧。</div>';
+      return;
+    }
+    channels.forEach(function(ch){
+      var card = document.createElement('div'); card.className='chan';
+      var info = document.createElement('div'); info.className='chan-info';
+      var t = document.createElement('div'); t.className='chan-title'; t.textContent = ch.room;
+      var s = document.createElement('div'); s.className='chan-sub'; s.textContent = '昵称：' + (ch.name || '—');
+      info.appendChild(t); info.appendChild(s);
+      var enter = document.createElement('button'); enter.className='chan-enter'; enter.textContent='进入';
+      enter.onclick = function(){ enterChannel(ch.room, ch.name); };
+      var del = document.createElement('button'); del.className='chan-del'; del.textContent='×';
+      del.onclick = function(e){ e.stopPropagation(); removeChannel(ch.room); renderChannels(); if(!channels.length){ showHome(); } };
+      card.appendChild(info); card.appendChild(enter); card.appendChild(del);
+      list.appendChild(card);
+    });
+  }
+  function enterChannel(r, n){
+    r = sanitize(r); if(!r){ toast('频道号无效'); return; }
+    room = r; me = n || ($('nameInput').value.trim()) || '我';
+    try{ localStorage.setItem('rc_name', me); localStorage.setItem('rc_room', room); }catch(e){}
+    hideAll(); $('chat').style.display='flex';
+    $('roomTitle').textContent = '频道：' + room;
+    $('msgs').innerHTML=''; onlineSet={};
+    connect();
+  }
+
+  // ---------- 连接 / 聊天（保持不变） ----------
+  function setStatus(ok, bad, text){
+    var s = $('status');
+    s.className = 'status' + (ok?' ok':'') + (bad?' bad':'');
+    $('statusText').textContent = text;
+  }
+  function nowTime(){
+    var d = new Date();
+    function p(n){ return (n<10?'0':'')+n; }
+    return p(d.getHours())+':'+p(d.getMinutes());
+  }
+  function addMsg(from, text, mine){
+    var msgs = $('msgs');
+    var row = document.createElement('div');
+    row.className = 'row ' + (mine?'me':'other') + ' enter';
+    if(!mine){ var name = document.createElement('div'); name.className='name'; name.textContent = from; row.appendChild(name); }
+    var b = document.createElement('div'); b.className='bubble'; b.textContent = text;
+    var meta = document.createElement('div'); meta.className='meta'; meta.textContent = nowTime();
+    row.appendChild(b); row.appendChild(meta);
+    msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
+  }
+  function addSys(text){
+    var msgs = $('msgs');
+    var s = document.createElement('div'); s.className='sys enter'; s.textContent = text;
+    msgs.appendChild(s); msgs.scrollTop = msgs.scrollHeight;
+  }
+  function updateOnline(){
+    var n = Object.keys(onlineSet).length;
+    $('onlineSub').textContent = '在线人数：' + Math.max(1,n);
+  }
+  function connect(){
+    if(!mqtt){ toast('通信库加载失败'); return; }
+    if(client){ try{ client.end(true); }catch(e){} }
+    setStatus(false,false,'连接中…');
+    var cid = 'rc_' + Math.random().toString(16).slice(2,10);
+    client = mqtt.connect(broker, {
+      clientId: cid, clean:true, reconnectPeriod:3000, connectTimeout:8000,
+      username:'', password:''
+    });
+    client.on('connect', function(){
+      setStatus(true,false,'已连接');
+      var t = topicBase(room), pt = presenceTopic(room);
+      client.subscribe(t, {qos:0});
+      client.subscribe(pt, {qos:0});
+      onlineSet[cid] = true;
+      client.publish(pt, JSON.stringify({c:cid, n:me, s:1}), {qos:0});
+      addSys('已加入频道「'+room+'」');
+      updateOnline();
+    });
+    client.on('reconnect', function(){ setStatus(false,false,'重连中…'); });
+    client.on('offline', function(){ setStatus(false,true,'已断开'); });
+    client.on('error', function(e){ setStatus(false,true,'连接错误'); });
+    client.on('close', function(){ setStatus(false,true,'已断开'); });
+    client.on('message', function(topic, payload){
+      var raw = payload.toString();
+      if(topic === presenceTopic(room)){
+        try{ var p = JSON.parse(raw); if(p && p.c){ if(p.s){ onlineSet[p.c]=p.n||true; } else { delete onlineSet[p.c]; } updateOnline(); } }catch(e){}
+        return;
+      }
+      if(topic === topicBase(room)){
+        try{ var m = JSON.parse(raw); if(m && m.from && m.text!=null){ addMsg(m.from, m.text, false); Sound.receive(); } }catch(e){}
+      }
+    });
+  }
+  function send(){
+    var v = $('msgInput').value.trim();
+    if(!v) return;
+    addMsg(me, v, true);
+    Sound.send();
+    $('msgInput').value = '';
+    if(client && client.connected){
+      client.publish(topicBase(room), JSON.stringify({from:me, text:v, ts:Date.now()}), {qos:0});
+    }
+  }
+
+  // ---------- 事件 ----------
+  $('joinBtn').onclick = function(){
+    var r = sanitize($('roomInput').value);
+    var n = $('nameInput').value.trim();
+    if(!r){ toast('请输入频道号'); return; }
+    if(!n){ toast('请输入昵称'); return; }
+    addChannel(r, n);
+    enterChannel(r, n);
+  };
+  $('newChanBtn').onclick = function(){
+    hideAll(); $('join').style.display='flex';
+    $('roomInput').value='';
+    var last = (channels.length && channels[channels.length-1].name) || (localStorage.getItem('rc_name')||'');
+    $('nameInput').value = last;
+  };
+  $('sendBtn').onclick = send;
+  $('msgInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ send(); } });
+  $('exitBtn').onclick = function(){
+    if(client){ try{ client.end(true); }catch(e){} }
+    showHome();
+  };
+  $('status').onclick = function(){ $('settings').style.display='flex'; };
+  $('gearC').onclick = function(){ $('settings').style.display='flex'; };
+  $('setClose').onclick = function(){ $('settings').style.display='none'; };
+  $('saveBroker').onclick = function(){
+    var b = $('brokerInput').value.trim();
+    if(b){ broker = b; try{ localStorage.setItem('rc_broker', broker); }catch(e){} }
+    $('settings').style.display='none';
+    if(room){ connect(); }
+  };
+  function bridge(){ return (window.RoomChat) ? window.RoomChat : null; }
+  $('saveUiUrl').onclick = function(){
+    var b = bridge();
+    if(!b || !b.setUiUrl){ toast('当前 App 版本不支持，请更新'); return; }
+    var u = $('uiUrlInput').value.trim();
+    if(u && u.indexOf('://') < 0){ toast('请填写完整网址(含 http/https)'); return; }
+    b.setUiUrl(u);
+    toast('已保存，正在重载…');
+    setTimeout(function(){ if(b.reloadUi){ b.reloadUi(); } else { location.reload(); } }, 600);
+  };
+  $('resetUiUrl').onclick = function(){
+    var b = bridge();
+    if(!b || !b.setUiUrl){ toast('当前 App 版本不支持，请更新'); return; }
+    b.setUiUrl('');
+    toast('已恢复本地，正在重载…');
+    setTimeout(function(){ if(b.reloadUi){ b.reloadUi(); } else { location.reload(); } }, 600);
+  };
+
+  // ---------- 应用更新 ----------
+  function setVer(){
+    try{ var b = bridge(); if(b && b.getVersion){ $('verLabel').textContent = '当前版本：' + b.getVersion(); } }catch(e){}
+  }
+  function showUpdateResult(res){
+    var box = $('updateResult'); box.style.display='block'; box.className='upd';
+    res = res || {};
+    if(res.error){ box.textContent = '检查失败：' + res.error; return; }
+    if(res.hasUpdate){
+      box.className='upd has';
+      box.innerHTML = '<div class="pname">发现新版本 v' + (res.versionName||'?') + '</div>'
+        + '<div style="margin-top:4px">' + (res.note||'点击「下载并安装」升级') + '</div>'
+        + '<button class="btn" id="doInstall" style="margin-top:10px">下载并安装</button>';
+      $('doInstall').onclick = function(){ doInstall(); };
+    } else {
+      box.textContent = '已是最新版本（v' + (res.currentName||'?') + '）。';
+    }
+  }
+  function doInstall(){
+    var b = bridge();
+    if(!b || !b.installUpdate){ toast('当前 App 版本不支持自动更新'); return; }
+    $('updateResult').style.display='none';
+    var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
+    b.installUpdate();
+  }
+  function onUpdateChecked(res){ showUpdateResult(res); }
+  function onAutoUpdate(res){
+    if(!res || !res.hasUpdate) return;
+    $('aumVer').textContent = res.versionName || '?';
+    $('aumNote').textContent = (res.note || '点击「立即更新」即可升级到最新版。');
+    $('autoUpdateModal').style.display = 'flex';
+    var ban = $('updateBanner'); if(ban) ban.style.display='none';
+    Sound.update();
+  }
+  function onInstallProgress(p){
+    var i = $('updProgress'); i.style.display='block'; i.firstElementChild.style.width = (p||0) + '%';
+  }
+  function onInstallDone(r){
+    var i = $('updProgress'); i.style.display='none'; i.firstElementChild.style.width='0%';
+    if(r === 'ok'){ toast('正在打开安装器…'); }
+    else if(r === 'no_apk'){ toast('未找到新版安装包'); }
+    else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
+    else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
+    else { toast('更新完成'); }
+  }
+  window.__onUpdateChecked = onUpdateChecked;
+  window.__onAutoUpdate = onAutoUpdate;
+  window.__onInstallProgress = onInstallProgress;
+  window.__onInstallDone = onInstallDone;
+
+  $('checkUpdateBtn').onclick = function(){
+    var b = bridge();
+    if(b && b.checkUpdate){ b.checkUpdate(); toast('正在检查…'); }
+    else { toast('当前 App 版本不支持'); }
+  };
+  $('saveUpdateUrl').onclick = function(){
+    var b = bridge();
+    if(!b || !b.setUpdateUrl){ toast('当前 App 版本不支持'); return; }
+    var u = $('updateUrlInput').value.trim();
+    if(u && u.indexOf('://') < 0){ toast('请填写完整网址(含 http/https)'); return; }
+    b.setUpdateUrl(u);
+    toast('已保存更新地址');
+  };
+  // 预填更新地址 / 版本号
+  try{ var b2 = bridge(); if(b2 && b2.getUpdateUrl){ $('updateUrlInput').value = b2.getUpdateUrl() || ''; } }catch(e){}
+  setVer();
+
+  // 音效初始化：加载开关 + 首次交互恢复音频 + 按钮轻点音
+  loadSound();
+  function resumeAudioOnce(){ Sound.resume(); }
+  document.addEventListener('touchend', resumeAudioOnce, {once:true});
+  document.addEventListener('click', resumeAudioOnce, {once:true});
+  document.addEventListener('click', function(e){
+    var el = e.target;
+    var b = (el && el.closest) ? el.closest('button') : (el && el.tagName === 'BUTTON' ? el : null);
+    if(!b || b.id === 'sendBtn') return; // 发送键有专属音效
+    Sound.tap();
+  }, true);
+  $('soundToggle').onchange = function(){
+    var on = this.checked;
+    Sound.setEnabled(on);
+    try{ localStorage.setItem('rc_sound', on ? '1' : '0'); }catch(e){}
+    if(on) Sound.tap();
+  };
+  // 自动更新弹窗按钮
+  $('aumUpdate').onclick = function(){ $('autoUpdateModal').style.display='none'; doInstall(); };
+  $('aumLater').onclick = function(){ $('autoUpdateModal').style.display='none'; };
+
+  loadPrefs();
+  showHome();
+})();
+</script>
+</body>
+</html>
