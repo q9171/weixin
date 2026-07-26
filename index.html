@@ -6,8 +6,8 @@
 <title>威信</title>
 <style>
   :root{
-    --bg:#0e1621; --panel:#17212b; --panel2:#1d2a38; --accent:#2ea6ff;
-    --me:#2ea6ff; --me-text:#fff; --other:#242f3d; --other-text:#e9edf0;
+    --bg:#0e1621; --panel:#17212b; --panel2:#1d2a38; --accent:#38b0de;
+    --me:#38b0de; --me-text:#fff; --other:#242f3d; --other-text:#e9edf0;
     --muted:#7c8b99; --line:#22303f;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -39,7 +39,7 @@
   #join{display:none;position:fixed;inset:0;background:linear-gradient(160deg,#0e1621,#17212b 60%,#1d2a38);align-items:center;justify-content:center;padding:24px;z-index:30}
   .card{width:100%;max-width:360px;background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px 22px;box-shadow:0 18px 50px rgba(0,0,0,.45)}
   .logo{display:flex;align-items:center;gap:12px;margin-bottom:18px}
-  .logo .dot{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#2ea6ff,#1e7fd6);display:flex;align-items:center;justify-content:center;font-size:22px}
+  .logo .dot{width:42px;height:42px;border-radius:13px;background:linear-gradient(145deg,#38b0de,#2e8bdd);display:flex;align-items:center;justify-content:center;font-size:22px}
   .logo h1{font-size:21px;margin:0;letter-spacing:.5px}
   .logo p{margin:2px 0 0;font-size:12px;color:var(--muted)}
   label{display:block;font-size:13px;color:var(--muted);margin:14px 0 6px}
@@ -75,14 +75,14 @@
   .toast.show{opacity:1}
 
   /* 自动更新横幅 */
-  #updateBanner{display:none;position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));background:linear-gradient(135deg,#2ea6ff,#1e7fd6);color:#fff;border-radius:14px;padding:13px 16px;font-size:13.5px;z-index:45;box-shadow:0 10px 30px rgba(0,0,0,.4);cursor:pointer}
+  #updateBanner{display:none;position:fixed;left:12px;right:12px;top:max(12px,env(safe-area-inset-top));background:linear-gradient(135deg,#38b0de,#2e8bdd);color:#fff;border-radius:14px;padding:13px 16px;font-size:13.5px;z-index:45;box-shadow:0 10px 30px rgba(0,0,0,.4);cursor:pointer}
   #updateBanner b{font-size:14.5px}
   #updateBanner small{display:block;opacity:.85;margin-top:2px}
 
   /* 更新区域 */
   .ver{font-size:12px;color:var(--muted);margin:-2px 0 4px}
   .upd{margin-top:10px;font-size:12.5px;color:var(--muted);line-height:1.5}
-  .upd.has{border:1px solid var(--accent);color:var(--accent);background:rgba(46,166,255,.08);border-radius:10px;padding:10px 12px}
+  .upd.has{border:1px solid var(--accent);color:var(--accent);background:rgba(56,176,222,.08);border-radius:10px;padding:10px 12px}
   .upd .pname{font-weight:600;color:#fff}
   .progress{height:7px;border-radius:6px;background:var(--panel2);overflow:hidden;margin-top:8px;display:none}
   .progress > i{display:block;height:100%;width:0;background:var(--accent);transition:width .2s}
@@ -103,11 +103,11 @@
   @keyframes inOther{from{opacity:0;transform:translateX(-20px) scale(.96)}to{opacity:1;transform:none}}
   .row.me.enter{animation:inMe .22s ease-out}
   .row.other.enter{animation:inOther .22s ease-out}
-  @keyframes ringFlash{0%{box-shadow:0 0 0 0 rgba(46,166,255,0)}30%{box-shadow:0 0 0 4px rgba(46,166,255,.55)}100%{box-shadow:0 0 0 0 rgba(46,166,255,0)}}
+  @keyframes ringFlash{0%{box-shadow:0 0 0 0 rgba(56,176,222,0)}30%{box-shadow:0 0 0 4px rgba(56,176,222,.55)}100%{box-shadow:0 0 0 0 rgba(56,176,222,0)}}
   .row.other.enter .bubble{animation:ringFlash .6s ease-out}
   @keyframes sysPop{from{opacity:0;transform:translateY(6px) scale(.96)}to{opacity:1;transform:none}}
   .sys.enter{animation:sysPop .25s ease-out}
-  @keyframes bannerPulse{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.4)}50%{box-shadow:0 10px 42px rgba(46,166,255,.55)}}
+  @keyframes bannerPulse{0%,100%{box-shadow:0 10px 30px rgba(0,0,0,.4)}50%{box-shadow:0 10px 42px rgba(56,176,222,.55)}}
   #updateBanner{animation:bannerPulse 2.4s ease-in-out infinite}
   @media (prefers-reduced-motion: reduce){
     .row.me.enter,.row.other.enter,.row.other.enter .bubble,.sys.enter,#updateBanner{animation:none!important}
@@ -121,7 +121,7 @@
   .aum-icon{font-size:34px;margin-bottom:6px}
   .aum-title{font-size:18px;font-weight:700;margin-bottom:8px}
   .aum-note{font-size:12.5px;color:var(--muted);line-height:1.5;margin-bottom:18px;max-height:120px;overflow:auto}
-  #aumUpdate{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#2ea6ff,#1e7fd6);color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;transition:transform .08s}
+  #aumUpdate{width:100%;padding:13px;border:none;border-radius:12px;background:linear-gradient(135deg,#38b0de,#2e8bdd);color:#fff;font-size:15.5px;font-weight:700;cursor:pointer;transition:transform .08s}
   #aumUpdate:active{transform:scale(.97)}
   .aum-later{display:block;width:100%;margin-top:12px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer}
   @media (prefers-reduced-motion: reduce){#autoUpdateModal .aum-card{animation:none!important}}
@@ -268,10 +268,10 @@
       setEnabled:function(v){ enabled = !!v; },
       isEnabled:function(){ return enabled; },
       resume:function(){ ensure(); },
-      tap:function(){ if(!enabled) return; blip(1180, 0.03, 'square', 0.022); },
-      send:function(){ if(!enabled) return; blip(620, 0.09, 'triangle', 0.07); blip(960, 0.10, 'triangle', 0.05, 0.05); },
-      receive:function(){ if(!enabled) return; blip(523, 0.10, 'sine', 0.06); blip(784, 0.13, 'sine', 0.05, 0.06); },
-      update:function(){ if(!enabled) return; blip(659, 0.12, 'sine', 0.06); blip(880, 0.16, 'sine', 0.06, 0.10); blip(1175, 0.18, 'sine', 0.05, 0.22); }
+      tap:function(){ if(!enabled) return; blip(1180, 0.03, 'square', 0.09); },
+      send:function(){ if(!enabled) return; blip(620, 0.09, 'triangle', 0.20); blip(960, 0.10, 'triangle', 0.14, 0.05); },
+      receive:function(){ if(!enabled) return; blip(523, 0.10, 'sine', 0.18); blip(784, 0.13, 'sine', 0.14, 0.06); },
+      update:function(){ if(!enabled) return; blip(659, 0.12, 'sine', 0.18); blip(880, 0.16, 'sine', 0.16, 0.10); blip(1175, 0.18, 'sine', 0.14, 0.22); }
     };
   })();
   function loadSound(){
