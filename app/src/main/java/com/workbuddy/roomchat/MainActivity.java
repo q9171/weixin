@@ -37,10 +37,11 @@ public class MainActivity extends Activity {
     private static final String KEY_UPDATE_URL = "update_url";
     private static final String LOCAL = "file:///android_asset/index.html";
 
-    // 默认更新信息地址（version.json）。用 GitHub raw 直链避免 jsDelivR 对小文件缓存滞后；
-    // APK 本体仍走 jsDelivR 的 apkUrl（见 publish/version.json）。用户可在 App 设置里改。
+    // 默认更新信息地址（version.json）。用 jsDelivR CDN：国内移动网络访问更快、不易超时
+    // （raw.githubusercontent.com 在部分手机网络会被墙/超时，导致「检查失败」）。
+    // APK 本体也走 jsDelivR 的 apkUrl（见 publish/version.json）。用户可在 App 设置里改。
     private static final String UPDATE_INFO_URL =
-            "https://raw.githubusercontent.com/Q9171/weixin/main/version.json";
+            "https://cdn.jsdelivr.net/gh/Q9171/weixin@main/version.json";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
