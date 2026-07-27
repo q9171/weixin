@@ -37,13 +37,17 @@ public class MainActivity extends Activity {
     private static final String KEY_UPDATE_URL = "update_url";
     private static final String LOCAL = "file:///android_asset/index.html";
 
-    // 默认更新信息地址（version.json）。用 jsDelivR CDN + 浮动 git 标签 @latest：
-    // 每次发版 publish.sh 会把 @latest 移到最新提交，App 永远检查「最新版」，
-    // 这样已装用户也能自动收到更新提示（APK 下载地址仍用不可变标签 @vX.Y.Z，见 publish/version.json）。
-    // 国内移动网络访问快、不易超时（raw.githubusercontent.com 在部分手机网络会被墙/超时）。
-    // 用户可在 App 设置里改。
-    private static final String UPDATE_INFO_URL =
-            "https://cdn.jsdelivr.net/gh/Q9171/weixin@latest/version.json";
+    // 更新信息地址解析策略（关键：绕开 jsDelivR 标签缓存限制）：
+    // jsDelivR 对「标签名」做永久缓存——移动/重建同名标签、purge 都无法刷新旧内容。
+    // 因此发版必须用「全新版本标签名」（如 v1.0.4），App 不能写死某个标签。
+    // 本机先问 data.jsdelivr.com（实时、不缓存）拿到最新版本标签名，
+    // 再取 https://cdn.jsdelivr.net/gh/Q9171/weixin@<最新标签>/version.json 。
+    // 这样已装老用户也能自动收到更新提示，且每次都是新标签→CDN 即时返回新内容。
+    // 用户可在 App 设置里手动改更新地址（覆盖自动解析）。
+    private static final String REPO = "Q9171/weixin";
+    private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
+    // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
+    private static final String FALLBACK_TAG = "v1.0.3";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -83,11 +87,12 @@ public class MainActivity extends Activity {
         return p.getString(KEY_UI_URL, "");
     }
 
-    private String getUpdateUrl() {
+    // 用户手动设置的更新地址（SharedPreferences）。为空表示「自动解析」。
+    private String getStoredUpdateUrl() {
         SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
         String u = p.getString(KEY_UPDATE_URL, "");
         if (u != null && !u.trim().isEmpty()) return u.trim();
-        return UPDATE_INFO_URL;
+        return "";
     }
 
     @SuppressWarnings("deprecation")
@@ -165,6 +170,55 @@ public class MainActivity extends Activity {
         return sb.toString();
     }
 
+    // 从 data.jsdelivr.com（实时、不缓存）取最新版本标签名（最高语义版本号）。
+    // 注意：data API 返回的 version 不带 v 前缀（如 "1.0.3"），但 CDN 标签名带 v（v1.0.3），拼 URL 时要补回。
+    private String resolveLatestTag() {
+        try {
+            String meta = downloadString(META_URL);
+            JSONObject root = new JSONObject(meta);
+            java.util.List<String> tags = new java.util.ArrayList<String>();
+            org.json.JSONArray versions = root.optJSONArray("versions");
+            if (versions != null) {
+                for (int i = 0; i < versions.length(); i++) {
+                    String ver = versions.getJSONObject(i).optString("version", "");
+                    if (ver.matches("^v?\\d+\\.\\d+\\.\\d+$")) tags.add(ver);
+                }
+            }
+            if (tags.isEmpty()) return FALLBACK_TAG;
+            java.util.Collections.sort(tags, new java.util.Comparator<String>() {
+                public int compare(String a, String b) {
+                    return Integer.compare(parseVer(b), parseVer(a)); // 降序
+                }
+            });
+            return tags.get(0);
+        } catch (Exception e) {
+            return FALLBACK_TAG;
+        }
+    }
+
+    // "v1.0.3" / "1.0.3" -> 可比较整数（major*1e6+minor*1e3+patch）
+    private int parseVer(String v) {
+        String[] p = v.replaceFirst("^v", "").split("\\.");
+        int maj = 0, min = 0, pat = 0;
+        try { maj = Integer.parseInt(p[0]); } catch (Exception ignore) {}
+        try { min = Integer.parseInt(p[1]); } catch (Exception ignore) {}
+        try { pat = Integer.parseInt(p[2]); } catch (Exception ignore) {}
+        return maj * 1000000 + min * 1000 + pat;
+    }
+
+    // 拼出某个标签对应的 version.json 地址（data API 给的版本号可能缺 v 前缀，这里补回）
+    private String buildUpdateUrl(String ver) {
+        String t = (ver != null && ver.startsWith("v")) ? ver : ("v" + ver);
+        return "https://cdn.jsdelivr.net/gh/" + REPO + "@" + t + "/version.json";
+    }
+
+    // 解析最终要检查的更新地址：用户手动设置优先，否则自动发现最新标签
+    private String resolveUpdateUrl() {
+        String u = getStoredUpdateUrl();
+        if (u != null && !u.isEmpty()) return u;
+        return buildUpdateUrl(resolveLatestTag());
+    }
+
     // 下载文件（用于 APK），带进度回调
     private void downloadFile(String urlStr, File out, ProgressListener listener)
             throws IOException {
@@ -223,7 +277,7 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    JSONObject res = buildUpdateResult(downloadString(getUpdateUrl()));
+                    JSONObject res = buildUpdateResult(downloadString(resolveUpdateUrl()));
                     if (res.optBoolean("hasUpdate", false)) {
                         callJs("window.__onAutoUpdate && window.__onAutoUpdate("
                                 + res.toString() + ")");
@@ -241,7 +295,7 @@ public class MainActivity extends Activity {
             @Override
             public void run() {
                 try {
-                    JSONObject res = buildUpdateResult(downloadString(getUpdateUrl()));
+                    JSONObject res = buildUpdateResult(downloadString(resolveUpdateUrl()));
                     callJs("window.__onUpdateChecked && window.__onUpdateChecked("
                             + res.toString() + ")");
                 } catch (Exception e) {
@@ -338,7 +392,8 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public String getUpdateUrl() {
-            return getUpdateUrl();
+            String u = getStoredUpdateUrl();
+            return (u == null || u.isEmpty()) ? "auto" : u;
         }
 
         @JavascriptInterface
