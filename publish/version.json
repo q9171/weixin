@@ -1,6 +1,6 @@
 {
-  "versionCode": 9,
-  "versionName": "1.0.8",
-  "note": "v1.0.8 更新：\n• 修复应用内更新下载卡在 0% 的问题\n• 自动切换 cdn.jsdelivr.net 到国内更快的 gcore.jsdelivr.net\n• 下载增加防缓存、失败重试、断流保护\n• 含 v1.0.7 聊天记录本地保存功能",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.0.8/wei-1.0.8.apk"
+  "versionCode": 10,
+  "versionName": "1.0.9",
+  "note": "v1.0.9 更新：\n• 修复单人频道自己发的消息被当成对方消息回显的问题\n• 聊天记录本地保存，退出频道再进入不丢失\n• 删除频道时同时清除该频道的聊天记录\n• 每频道最多保留500条历史消息",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.0.9/wei-1.0.9.apk"
 }
