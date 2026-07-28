@@ -51,7 +51,7 @@
   /* 聊天 */
   #chat{display:none;flex-direction:column;height:100%;height:100dvh}
   .top .back{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:6px 4px;margin-right:4px}
-  #msgs{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;background:#f7d4d4}
+  #msgs{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;background:#08203b}
   .row{display:flex;flex-direction:column;max-width:78%}
   .row.me{align-self:flex-end;align-items:flex-end}
   .row.other{align-self:flex-start;align-items:flex-start}
@@ -133,10 +133,27 @@
   #aumUpdate:active{transform:scale(.97)}
   .aum-later{display:block;width:100%;margin-top:12px;background:none;border:none;color:var(--muted);font-size:13px;cursor:pointer}
   @media (prefers-reduced-motion: reduce){#autoUpdateModal .aum-card{animation:none!important}}
+
+  /* 开启动画 */
+  #splash{position:fixed;inset:0;z-index:60;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(160deg,#0a1722,#0f2436 60%,#123048);transition:opacity .55s ease}
+  #splash.hide{opacity:0;pointer-events:none}
+  .splash-logo{animation:splashIn .8s ease-out both}
+  .splash-logo .dot{width:76px;height:76px;border-radius:22px;background:linear-gradient(145deg,#38b0de,#2e8bdd);display:flex;align-items:center;justify-content:center;font-size:40px;box-shadow:0 14px 44px rgba(56,176,222,.45)}
+  .splash-title{margin-top:20px;font-size:27px;font-weight:700;letter-spacing:1px;animation:splashIn .8s .1s ease-out both}
+  .splash-sub{margin-top:6px;font-size:12.5px;color:var(--muted);animation:splashIn .8s .2s ease-out both}
+  @keyframes splashIn{from{opacity:0;transform:translateY(14px) scale(.9)}to{opacity:1;transform:none}}
+  @media (prefers-reduced-motion: reduce){.splash-logo,.splash-title,.splash-sub{animation:none!important}#splash{transition:none!important}}
 </style>
 </head>
 <body>
 <div id="app">
+
+  <!-- 开启动画 -->
+  <div id="splash">
+    <div class="splash-logo"><div class="dot">💬</div></div>
+    <div class="splash-title">威信</div>
+    <div class="splash-sub">安全轻量聊天</div>
+  </div>
 
   <!-- 频道列表（首页） -->
   <div id="channels">
@@ -639,6 +656,8 @@
 
   loadPrefs();
   showHome();
+  // 开启动画：约 1.8 秒后淡出
+  setTimeout(function(){ var sp=$('splash'); if(sp){ sp.classList.add('hide'); setTimeout(function(){ sp.style.display='none'; }, 600); } }, 1800);
 })();
 </script>
 </body>
