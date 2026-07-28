@@ -10,6 +10,7 @@ import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.provider.Settings;
 import android.view.KeyEvent;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -47,7 +48,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.0.4";
+    private static final String FALLBACK_TAG = "v1.0.5";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -314,6 +315,24 @@ public class MainActivity extends Activity {
 
     // 下载 APK 并拉起系统安装器
     private void installUpdate() {
+        // Android 8+ 必须先有「安装未知应用」权限，否则下载完也拉不起安装器。
+        // 无权限时跳到系统设置页引导用户开启，并提示回来点「重试」。
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+                && !getPackageManager().canRequestPackageInstalls()) {
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    callJs("window.__onInstallDone && window.__onInstallDone('launch_err:请先允许威信安装应用')");
+                    try {
+                        Intent s = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
+                        s.setData(Uri.parse("package:" + getPackageName()));
+                        s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(s);
+                    } catch (Exception ignore) {}
+                }
+            });
+            return;
+        }
         if (pendingApkUrl == null || pendingApkUrl.isEmpty()) {
             callJs("window.__onInstallDone && window.__onInstallDone('no_apk')");
             return;
@@ -349,10 +368,10 @@ public class MainActivity extends Activity {
             public void run() {
                 try {
                     Uri uri = Uri.parse("content://" + ApkFileProvider.AUTHORITY + "/update.apk");
-                    Intent intent = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-                    intent.setData(uri);
-                    intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION
-                            | Intent.FLAG_ACTIVITY_NEW_TASK);
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setDataAndType(uri, "application/vnd.android.package-archive");
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                     startActivity(intent);
                 } catch (Exception e) {
                     callJs("window.__onInstallDone && window.__onInstallDone('launch_err:"
