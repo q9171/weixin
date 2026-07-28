@@ -1,6 +1,6 @@
 {
-  "versionCode": 4,
-  "versionName": "1.0.3",
-  "note": "当前正式版。",
-  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.3/wei-1.0.3.apk"
+  "versionCode": 5,
+  "versionName": "1.0.4",
+  "note": "v1.0.4 更新：\n• 新增表情包：聊天输入框左侧加表情按钮，点开可选常用表情发送\n• 更新弹窗显示更新日志，一眼看懂改了什么",
+  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.4/wei-1.0.4.apk"
 }
