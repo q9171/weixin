@@ -54,6 +54,14 @@ public class MainActivity extends Activity {
     private volatile String pendingApkUrl = "";
     private volatile String pendingVersionName = "";
 
+    // 国内移动网络下 cdn.jsdelivr.net 常被限速/首字节极慢，统一切到 gcore 域名
+    private String normalizeCdnUrl(String url) {
+        if (url == null) return "";
+        // 把 https://cdn.jsdelivr.net/... 替换成 https://gcore.jsdelivr.net/...
+        // 保留 http 备用，只替换域名部分
+        return url.replaceFirst("(?i)^https?://cdn\\.jsdelivr\\.net/", "https://gcore.jsdelivr.net/");
+    }
+
     @SuppressLint({"SetJavaScriptEnabled", "AddJavascriptInterface"})
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -220,31 +228,61 @@ public class MainActivity extends Activity {
         return buildUpdateUrl(resolveLatestTag());
     }
 
-    // 下载文件（用于 APK），带进度回调
+    // 下载文件（用于 APK），带进度回调；失败自动重试 1 次
     private void downloadFile(String urlStr, File out, ProgressListener listener)
             throws IOException {
-        URL url = new URL(urlStr);
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setConnectTimeout(15000);
-        conn.setReadTimeout(30000);
-        int total = conn.getContentLength();
-        File parent = out.getParentFile();
-        if (parent != null && !parent.exists()) parent.mkdirs();
-        try (InputStream in = conn.getInputStream();
-             FileOutputStream fos = new FileOutputStream(out)) {
-            byte[] buf = new byte[8192];
-            int read;
-            long got = 0;
-            while ((read = in.read(buf)) != -1) {
-                fos.write(buf, 0, read);
-                got += read;
-                if (total > 0 && listener != null) {
-                    listener.onProgress((int) (got * 100 / total));
+        IOException lastErr = null;
+        for (int attempt = 0; attempt < 2; attempt++) {
+            HttpURLConnection conn = null;
+            try {
+                URL url = new URL(urlStr);
+                conn = (HttpURLConnection) url.openConnection();
+                conn.setConnectTimeout(15000);          // TCP 连接超时
+                conn.setReadTimeout(30000);             // 读数据超时
+                conn.setUseCaches(false);
+                conn.setInstanceFollowRedirects(true);
+                conn.setRequestProperty("Accept", "*/*");
+                conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
+                conn.setRequestProperty("Pragma", "no-cache");
+                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android;威信RoomChat)");
+                int total = conn.getContentLength();
+                File parent = out.getParentFile();
+                if (parent != null && !parent.exists()) parent.mkdirs();
+
+                // 立刻回调 0%，避免界面长时间没反应
+                if (listener != null) listener.onProgress(0);
+
+                try (InputStream in = conn.getInputStream();
+                     FileOutputStream fos = new FileOutputStream(out)) {
+                    byte[] buf = new byte[8192];
+                    int read;
+                    long got = 0;
+                    long lastProgressAt = System.currentTimeMillis();
+                    while ((read = in.read(buf)) != -1) {
+                        fos.write(buf, 0, read);
+                        got += read;
+                        lastProgressAt = System.currentTimeMillis();
+                        if (total > 0 && listener != null) {
+                            listener.onProgress((int) (got * 100 / total));
+                        }
+                        // 保护：如果 35 秒内没有任何数据到达，主动断开重试
+                        if (System.currentTimeMillis() - lastProgressAt > 35000) {
+                            throw new IOException("download stalled");
+                        }
+                    }
                 }
+                return; // 成功
+            } catch (IOException e) {
+                lastErr = e;
+                if (attempt == 0) {
+                    if (listener != null) listener.onProgress(0);
+                    try { Thread.sleep(800); } catch (InterruptedException ignored) {}
+                }
+            } finally {
+                if (conn != null) conn.disconnect();
             }
-        } finally {
-            conn.disconnect();
         }
+        throw lastErr != null ? lastErr : new IOException("download failed");
     }
 
     interface ProgressListener {
@@ -260,7 +298,7 @@ public class MainActivity extends Activity {
         String apk = o.optString("apkUrl", "");
         int cur = getCurrentVersionCode();
         boolean has = remoteCode > cur && !apk.isEmpty();
-        pendingApkUrl = has ? apk : "";
+        pendingApkUrl = has ? normalizeCdnUrl(apk) : "";
         pendingVersionName = remoteName;
         JSONObject res = new JSONObject();
         res.put("hasUpdate", has);
