@@ -434,7 +434,15 @@
         return;
       }
       if(topic === topicBase(room)){
-        try{ var m = JSON.parse(raw); if(m && m.from && m.text!=null){ addMsg(m.from, m.text, false, m.ts); appendHistory(room, m.from, m.text, false, m.ts); Sound.receive(); } }catch(e){}
+        try{
+          var m = JSON.parse(raw);
+          if(m && m.from && m.text!=null){
+            if(m.cid && m.cid === client.options.clientId){ return; } // 过滤自己发出去被回环的消息
+            addMsg(m.from, m.text, false, m.ts);
+            appendHistory(room, m.from, m.text, false, m.ts);
+            Sound.receive();
+          }
+        }catch(e){}
       }
     });
   }
@@ -447,7 +455,7 @@
     $('msgInput').value = '';
     $('emojiPanel').classList.remove('show');
     if(client && client.connected){
-      client.publish(topicBase(room), JSON.stringify({from:me, text:v, ts:Date.now()}), {qos:0});
+      client.publish(topicBase(room), JSON.stringify({from:me, text:v, ts:Date.now(), cid:client.options.clientId}), {qos:0});
     }
   }
 
