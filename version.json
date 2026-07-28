@@ -1,6 +1,6 @@
 {
-  "versionCode": 7,
-  "versionName": "1.0.6",
-  "note": "v1.0.6 更新：\n• 聊天背景改为深蓝色\n• 新增应用开启动画（进入 App 时威信 logo 淡入展示）\n• 含上一版更新按钮修复（点立即更新有进度反馈+权限引导）",
-  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.6/wei-1.0.6.apk"
+  "versionCode": 8,
+  "versionName": "1.0.7",
+  "note": "v1.0.7 更新：\n• 聊天记录本地保存，退出频道再进入不丢失\n• 删除频道时同时清除该频道的聊天记录\n• 每频道最多保留500条历史消息",
+  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.7/wei-1.0.7.apk"
 }
