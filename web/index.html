@@ -357,7 +357,7 @@
       var enter = document.createElement('button'); enter.className='chan-enter'; enter.textContent='进入';
       enter.onclick = function(){ enterChannel(ch.room, ch.name); };
       var del = document.createElement('button'); del.className='chan-del'; del.textContent='×';
-      del.onclick = function(e){ e.stopPropagation(); removeChannel(ch.room); renderChannels(); if(!channels.length){ showHome(); } };
+      del.onclick = function(e){ e.stopPropagation(); removeChannel(ch.room); clearHistory(ch.room); renderChannels(); if(!channels.length){ showHome(); } };
       card.appendChild(info); card.appendChild(enter); card.appendChild(del);
       list.appendChild(card);
     });
@@ -369,6 +369,7 @@
     hideAll(); $('chat').style.display='flex';
     $('roomTitle').textContent = '频道：' + room;
     $('msgs').innerHTML=''; onlineSet={};
+    renderHistory(room); // 恢复历史聊天记录
     connect();
   }
 
@@ -383,15 +384,16 @@
     function p(n){ return (n<10?'0':'')+n; }
     return p(d.getHours())+':'+p(d.getMinutes());
   }
-  function addMsg(from, text, mine){
+  function addMsg(from, text, mine, ts, isHistory){
     var msgs = $('msgs');
     var row = document.createElement('div');
-    row.className = 'row ' + (mine?'me':'other') + ' enter';
+    row.className = 'row ' + (mine?'me':'other') + (isHistory ? '' : ' enter');
     if(!mine){ var name = document.createElement('div'); name.className='name'; name.textContent = from; row.appendChild(name); }
     var b = document.createElement('div'); b.className='bubble'; b.textContent = text;
-    var meta = document.createElement('div'); meta.className='meta'; meta.textContent = nowTime();
+    var meta = document.createElement('div'); meta.className='meta'; meta.textContent = fmtTime(ts);
     row.appendChild(b); row.appendChild(meta);
-    msgs.appendChild(row); msgs.scrollTop = msgs.scrollHeight;
+    msgs.appendChild(row); 
+    if(!isHistory) msgs.scrollTop = msgs.scrollHeight;
   }
   function addSys(text){
     var msgs = $('msgs');
@@ -432,14 +434,15 @@
         return;
       }
       if(topic === topicBase(room)){
-        try{ var m = JSON.parse(raw); if(m && m.from && m.text!=null){ addMsg(m.from, m.text, false); Sound.receive(); } }catch(e){}
+        try{ var m = JSON.parse(raw); if(m && m.from && m.text!=null){ addMsg(m.from, m.text, false, m.ts); appendHistory(room, m.from, m.text, false, m.ts); Sound.receive(); } }catch(e){}
       }
     });
   }
   function send(){
     var v = $('msgInput').value.trim();
     if(!v) return;
-    addMsg(me, v, true);
+    addMsg(me, v, true, Date.now());
+    appendHistory(room, me, v, true, Date.now());
     Sound.send();
     $('msgInput').value = '';
     $('emojiPanel').classList.remove('show');
@@ -473,6 +476,37 @@
     if(p.classList.contains('show')){ p.classList.remove('show'); }
     else { if(!p.querySelector('.emoji-grid')) buildEmojiPanel(); p.classList.add('show'); }
     Sound.tap();
+  }
+
+  // ---------- 聊天记录持久化 ----------
+  var MAX_HISTORY = 500; // 每频道最多存500条，防止localStorage撑爆
+  function histKey(r){ return 'rc_hist_' + r; }
+  function loadHistory(r){
+    try{ var h = localStorage.getItem(histKey(r)); if(h) return JSON.parse(h) || []; }catch(e){}
+    return [];
+  }
+  function saveHistory(r, arr){
+    try{
+      if(arr.length > MAX_HISTORY) arr = arr.slice(arr.length - MAX_HISTORY);
+      localStorage.setItem(histKey(r), JSON.stringify(arr));
+    }catch(e){ /* 存储满或隐私模式，静默失败 */ }
+  }
+  function appendHistory(r, from, text, mine, ts){
+    var h = loadHistory(r);
+    h.push({from:from, text:text, mine:mine, ts:ts||0});
+    saveHistory(r, h);
+  }
+  function clearHistory(r){ try{ localStorage.removeItem(histKey(r)); }catch(e){} }
+  function renderHistory(r){
+    var h = loadHistory(r);
+    if(!h.length) return;
+    h.forEach(function(m){ addMsg(m.from, m.text, m.mine, m.ts, true); });
+  }
+  function fmtTime(ts){
+    if(!ts) return nowTime();
+    var d = new Date(ts);
+    function p(n){ return (n<10?'0':'')+n; }
+    return p(d.getHours())+':'+p(d.getMinutes());
   }
 
   // ---------- 事件 ----------
