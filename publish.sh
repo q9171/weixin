@@ -38,7 +38,17 @@ if os.path.exists(p):
     d = json.load(open(p, encoding='utf-8'))
 d['versionCode'] = int(vc)
 d['versionName'] = vn
-d['note'] = 'v' + vn + ' 更新：\n• 聊天记录本地保存，退出频道再进入不丢失\n• 删除频道时同时清除该频道的聊天记录\n• 每频道最多保留500条历史消息'
+note_lines = [
+  'v' + vn + ' 更新：',
+  '• 修复单人频道自己发的消息被当成对方消息回显的问题',
+  '• 聊天记录本地保存，退出频道再进入不丢失',
+  '• 删除频道时同时清除该频道的聊天记录',
+  '• 每频道最多保留500条历史消息'
+]
+if int(vc) <= 9:
+  # v1.0.9 之前保留旧文案兼容
+  pass
+d['note'] = '\n'.join(note_lines)
 apk_name = 'wei-%s.apk' % vn
 if os.path.exists('app-debug.apk'):
     shutil.copy('app-debug.apk', apk_name)
