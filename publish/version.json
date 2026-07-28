@@ -1,6 +1,6 @@
 {
-  "versionCode": 5,
-  "versionName": "1.0.4",
-  "note": "v1.0.4 更新：\n• 新增表情包：聊天输入框左侧加表情按钮，点开可选常用表情发送\n• 更新弹窗显示更新日志，一眼看懂改了什么",
-  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.4/wei-1.0.4.apk"
+  "versionCode": 6,
+  "versionName": "1.0.5",
+  "note": "v1.0.5 更新：\n• 修复点「立即更新」没反应：现在点更新后弹窗里直接显示下载进度，不再看不见\n• 下载完自动引导开启「安装未知应用」权限，安装界面能正常弹出\n• 安装器调用更稳健，兼容更多安卓机型",
+  "apkUrl": "https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.5/wei-1.0.5.apk"
 }
