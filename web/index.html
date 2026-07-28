@@ -533,11 +533,21 @@
       box.textContent = '已是最新版本（v' + (res.currentName||'?') + '）。';
     }
   }
-  function doInstall(){
+  // installFromModal=true：从「进入App自动弹出的更新弹窗」触发，进度反馈显示在弹窗里；
+  // =false：从「设置→检查更新」触发，进度显示在设置面板内的进度条。
+  var installFromModal = false;
+  function doInstall(fromModal){
     var b = bridge();
     if(!b || !b.installUpdate){ toast('当前 App 版本不支持自动更新'); return; }
-    $('updateResult').style.display='none';
-    var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
+    installFromModal = !!fromModal;
+    if(installFromModal){
+      var btn = $('aumUpdate'); btn.disabled = true; btn.textContent = '下载中…0%';
+      var later = $('aumLater'); if(later) later.style.display='none';
+      $('aumNote').textContent = '正在下载新版本，请稍候…';
+    } else {
+      $('updateResult').style.display='none';
+      var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
+    }
     b.installUpdate();
   }
   function onUpdateChecked(res){ showUpdateResult(res); }
@@ -550,15 +560,39 @@
     Sound.update();
   }
   function onInstallProgress(p){
-    var i = $('updProgress'); i.style.display='block'; i.firstElementChild.style.width = (p||0) + '%';
+    p = p || 0;
+    if(installFromModal){
+      $('aumUpdate').textContent = '下载中…' + p + '%';
+    } else {
+      var i = $('updProgress'); i.style.display='block'; i.firstElementChild.style.width = p + '%';
+    }
   }
   function onInstallDone(r){
-    var i = $('updProgress'); i.style.display='none'; i.firstElementChild.style.width='0%';
-    if(r === 'ok'){ toast('正在打开安装器…'); }
-    else if(r === 'no_apk'){ toast('未找到新版安装包'); }
-    else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
-    else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
-    else { toast('更新完成'); }
+    if(installFromModal){
+      var btn = $('aumUpdate');
+      if(r === 'ok'){
+        $('aumNote').textContent = '下载完成，正在打开安装器…若没弹出安装界面，请到「手机设置→应用→威信→安装未知应用」开启权限后点重试。';
+        btn.textContent = '等待安装…'; btn.disabled = true;
+      } else if(r === 'no_apk'){
+        $('aumNote').textContent = '未找到新版安装包，请稍后重试。';
+        btn.textContent = '重试'; btn.disabled = false;
+      } else if(r && r.indexOf('err')===0){
+        $('aumNote').textContent = '下载失败：' + r.slice(4) + '。请检查网络后点重试。';
+        btn.textContent = '重试'; btn.disabled = false;
+      } else if(r && r.indexOf('launch_err')===0){
+        $('aumNote').textContent = r.slice(11) + '\n请到「手机设置→应用→威信→安装未知应用」开启权限，然后点重试。';
+        btn.textContent = '重试'; btn.disabled = false;
+      } else {
+        $('aumNote').textContent = '更新完成。';
+      }
+    } else {
+      var i = $('updProgress'); i.style.display='none'; i.firstElementChild.style.width='0%';
+      if(r === 'ok'){ toast('正在打开安装器…'); }
+      else if(r === 'no_apk'){ toast('未找到新版安装包'); }
+      else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
+      else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
+      else { toast('更新完成'); }
+    }
   }
   window.__onUpdateChecked = onUpdateChecked;
   window.__onAutoUpdate = onAutoUpdate;
@@ -600,7 +634,7 @@
     if(on) Sound.tap();
   };
   // 自动更新弹窗按钮
-  $('aumUpdate').onclick = function(){ $('autoUpdateModal').style.display='none'; doInstall(); };
+  $('aumUpdate').onclick = function(){ doInstall(true); };
   $('aumLater').onclick = function(){ $('autoUpdateModal').style.display='none'; };
 
   loadPrefs();
