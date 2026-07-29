@@ -207,17 +207,6 @@
       <button class="close" id="setClose">✕</button>
       <h2>设置</h2>
       <div class="switchRow"><span>交互音效</span><label class="switch"><input type="checkbox" id="soundToggle" checked /><span class="slider"></span></label></div>
-      <label>中转服务器 (WSS)</label>
-      <input id="brokerInput" autocomplete="off" />
-      <div class="hint">默认公共服务器 broker.emqx.io。如连接不稳定可改用 wss://test.mosquitto.org:8081</div>
-      <button class="btn" id="saveBroker">保存并重连</button>
-
-      <div style="height:1px;background:var(--line);margin:18px 0"></div>
-      <label>界面地址 (UI URL，留空用本地)</label>
-      <input id="uiUrlInput" autocomplete="off" placeholder="https://cdn.jsdelivr.net/gh/用户名/仓库@main/index.html" />
-      <div class="hint">填了就从该网址加载聊天界面，以后更新界面无需重装 App。留空则使用 App 内置界面（断网可用）。</div>
-      <button class="btn" id="saveUiUrl" style="background:#2f3e4d">保存界面地址</button>
-      <button class="btn" id="resetUiUrl" style="background:#4d2f2f;margin-top:10px">恢复本地内置界面</button>
 
       <div style="height:1px;background:var(--line);margin:18px 0"></div>
       <h2>应用更新</h2>
@@ -315,11 +304,6 @@
       var b = localStorage.getItem('rc_broker'); if(b) broker = b;
       var c = localStorage.getItem('rc_channels'); if(c) channels = JSON.parse(c) || [];
       var n = localStorage.getItem('rc_name'); if(n) $('nameInput').value = n;
-    }catch(e){}
-    $('brokerInput').value = broker;
-    try{
-      var b2 = (window.RoomChat) ? window.RoomChat : null;
-      if(b2 && b2.getUiUrl){ $('uiUrlInput').value = b2.getUiUrl() || ''; }
     }catch(e){}
   }
   function saveChannels(){ try{ localStorage.setItem('rc_channels', JSON.stringify(channels)); }catch(e){} }
@@ -549,29 +533,7 @@
   $('status').onclick = function(){ $('settings').style.display='block'; };
   $('gearC').onclick = function(){ $('settings').style.display='block'; };
   $('setClose').onclick = function(){ $('settings').style.display='none'; };
-  $('saveBroker').onclick = function(){
-    var b = $('brokerInput').value.trim();
-    if(b){ broker = b; try{ localStorage.setItem('rc_broker', broker); }catch(e){} }
-    $('settings').style.display='none';
-    if(room){ connect(); }
-  };
   function bridge(){ return (window.RoomChat) ? window.RoomChat : null; }
-  $('saveUiUrl').onclick = function(){
-    var b = bridge();
-    if(!b || !b.setUiUrl){ toast('当前 App 版本不支持，请更新'); return; }
-    var u = $('uiUrlInput').value.trim();
-    if(u && u.indexOf('://') < 0){ toast('请填写完整网址(含 http/https)'); return; }
-    b.setUiUrl(u);
-    toast('已保存，正在重载…');
-    setTimeout(function(){ if(b.reloadUi){ b.reloadUi(); } else { location.reload(); } }, 600);
-  };
-  $('resetUiUrl').onclick = function(){
-    var b = bridge();
-    if(!b || !b.setUiUrl){ toast('当前 App 版本不支持，请更新'); return; }
-    b.setUiUrl('');
-    toast('已恢复本地，正在重载…');
-    setTimeout(function(){ if(b.reloadUi){ b.reloadUi(); } else { location.reload(); } }, 600);
-  };
 
   // ---------- 应用更新 ----------
   function setVer(){
