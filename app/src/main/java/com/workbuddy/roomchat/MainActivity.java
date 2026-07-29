@@ -30,11 +30,23 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+
+import android.graphics.Typeface;
+import android.os.Handler;
+import android.os.Looper;
+import android.webkit.RenderProcessGoneDetail;
+import android.widget.ScrollView;
+import android.widget.TextView;
 
 public class MainActivity extends Activity {
 
@@ -57,7 +69,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.1.2";
+    private static final String FALLBACK_TAG = "v1.1.4";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -75,7 +87,18 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 全局兜底：任何未捕获异常都不再「闪退」，而是把错误显示在屏幕上（用户可截图发回）
+        installGlobalCrashHandler();
+        try {
+            initUi();
+        } catch (Throwable e) {
+            // 启动阶段崩溃（如设备 WebView 组件异常）直接显示错误，而不是强制退出
+            showFatal(e);
+        }
+    }
 
+    // 构建并加载界面；任何一步异常都会被 onCreate 的 try/catch 捕获
+    private void initUi() {
         webView = new WebView(this);
         WebSettings s = webView.getSettings();
         s.setJavaScriptEnabled(true);
@@ -98,6 +121,84 @@ public class MainActivity extends Activity {
         registerReceiver(dlReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
         setContentView(webView);
+    }
+
+    // ============ 崩溃兜底（避免闪退 + 便于定位） ============
+
+    // 全局未捕获异常处理器：把错误写入文件并在屏幕上显示，而不是直接闪退
+    private void installGlobalCrashHandler() {
+        final Thread.UncaughtExceptionHandler def = Thread.getDefaultUncaughtExceptionHandler();
+        Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {
+            @Override
+            public void uncaughtException(Thread t, Throwable e) {
+                final String trace = stackTrace(e);
+                writeCrashLog(trace);
+                // 尽量在主线程把错误画到屏幕上；若主线程已死则退回系统默认处理
+                try {
+                    new Handler(Looper.getMainLooper()).post(new Runnable() {
+                        @Override
+                        public void run() { showFatal(trace); }
+                    });
+                } catch (Throwable ignore) {
+                    if (def != null) def.uncaughtException(t, e);
+                }
+            }
+        });
+    }
+
+    // 把异常栈转成可显示的文本（只保留前若干行，避免手机屏过长）
+    private String stackTrace(Throwable e) {
+        try {
+            StringWriter sw = new StringWriter();
+            e.printStackTrace(new PrintWriter(sw));
+            String s = sw.toString();
+            String[] lines = s.split("\n");
+            int n = Math.min(lines.length, 40);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < n; i++) sb.append(lines[i]).append('\n');
+            if (lines.length > n) sb.append("…(共 ").append(lines.length).append(" 行)");
+            return sb.toString();
+        } catch (Throwable ignore) {
+            return String.valueOf(e);
+        }
+    }
+
+    // 把崩溃信息存到应用私有目录，方便排查
+    private void writeCrashLog(String trace) {
+        try {
+            File dir = getExternalFilesDir(null);
+            if (dir == null) dir = getFilesDir();
+            File f = new File(dir, "crash.txt");
+            try (FileWriter fw = new FileWriter(f, false);
+                 BufferedWriter bw = new BufferedWriter(fw)) {
+                bw.write(trace);
+            }
+        } catch (Exception ignore) {
+        }
+    }
+
+    // 在屏幕上显示 fatal 错误（不依赖 WebView，即使 WebView 本身挂了也能显示）
+    private void showFatal(Throwable e) {
+        showFatal(stackTrace(e));
+    }
+
+    private void showFatal(String trace) {
+        writeCrashLog(trace);
+        try {
+            TextView tv = new TextView(this);
+            tv.setText("威信遇到问题，已拦截以避免闪退。\n请把下方内容截图发给我：\n\n" + trace);
+            tv.setTextColor(0xFFE9EDF0);
+            tv.setBackgroundColor(0xFF0A1722);
+            tv.setTextSize(11);
+            tv.setTypeface(Typeface.MONOSPACE);
+            tv.setPadding(28, 28, 28, 28);
+            ScrollView sv = new ScrollView(this);
+            sv.setBackgroundColor(0xFF0A1722);
+            sv.addView(tv);
+            setContentView(sv);
+        } catch (Throwable ignore) {
+            // 连错误界面都画不出来就放弃，交给系统默认处理
+        }
     }
 
     // 根据设置决定加载远程界面还是本地内置界面
@@ -168,6 +269,17 @@ public class MainActivity extends Activity {
                     view.loadUrl(LOCAL);
                 }
             }
+        }
+
+        // 渲染进程崩溃（部分机型/WebView 组件异常会触发）：不强制退出，自动重载本地界面
+        @Override
+        public boolean onRenderProcessGone(WebView view, RenderProcessGoneDetail detail) {
+            try {
+                // 先尝试重载内置界面，避免直接回到空白/闪退
+                if (view != null) view.loadUrl(LOCAL);
+            } catch (Throwable ignore) {
+            }
+            return true; // 返回 true 表示我们已处理，系统不会因此杀掉整个 App
         }
     }
 
