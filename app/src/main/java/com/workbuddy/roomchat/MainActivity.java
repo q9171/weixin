@@ -12,6 +12,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.Settings;
+import android.app.DownloadManager;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.IntentFilter;
+import android.database.Cursor;
 import android.view.KeyEvent;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebResourceRequest;
@@ -33,9 +38,10 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
 
-    private static final int REQ_STORAGE = 1001;
-
     private WebView webView;
+    private DownloadManager dm;
+    private long downloadId = -1;
+    private BroadcastReceiver dlReceiver;
     private static final String PREFS = "roomchat_prefs";
     private static final String KEY_UI_URL = "ui_url";
     private static final String KEY_UPDATE_URL = "update_url";
@@ -56,8 +62,6 @@ public class MainActivity extends Activity {
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
     private volatile String pendingVersionName = "";
-    private volatile int lastProgress = -1;
-    private volatile boolean downloadDone = false;
 
     // 国内移动网络下 cdn.jsdelivr.net 常被限速/首字节极慢，统一切到 gcore 域名
     private String normalizeCdnUrl(String url) {
@@ -82,6 +86,16 @@ public class MainActivity extends Activity {
         webView.addJavascriptInterface(new Bridge(), "RoomChat");
         webView.setWebViewClient(new ChatClient());
         loadUi();
+
+        // 注册系统下载完成监听（DownloadManager 下载 APK 后自动拉起安装器）
+        dlReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                long id = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
+                if (id == downloadId) checkDownloadAndInstall();
+            }
+        };
+        registerReceiver(dlReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
 
         setContentView(webView);
     }
@@ -244,67 +258,6 @@ public class MainActivity extends Activity {
         return normalizeCdnUrl(url);
     }
 
-    // 下载文件（用于 APK），带进度回调；失败自动重试 1 次
-    private void downloadFile(String urlStr, File out, ProgressListener listener)
-            throws IOException {
-        IOException lastErr = null;
-        for (int attempt = 0; attempt < 2; attempt++) {
-            HttpURLConnection conn = null;
-            try {
-                URL url = new URL(urlStr);
-                conn = (HttpURLConnection) url.openConnection();
-                conn.setConnectTimeout(15000);          // TCP 连接超时
-                conn.setReadTimeout(30000);             // 读数据超时
-                conn.setUseCaches(false);
-                conn.setInstanceFollowRedirects(true);
-                conn.setRequestProperty("Accept", "*/*");
-                conn.setRequestProperty("Cache-Control", "no-cache, no-store, must-revalidate");
-                conn.setRequestProperty("Pragma", "no-cache");
-                conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Android;威信RoomChat)");
-                int total = conn.getContentLength();
-                File parent = out.getParentFile();
-                if (parent != null && !parent.exists()) parent.mkdirs();
-
-                // 立刻回调 0%，避免界面长时间没反应
-                if (listener != null) listener.onProgress(0);
-
-                try (InputStream in = conn.getInputStream();
-                     FileOutputStream fos = new FileOutputStream(out)) {
-                    byte[] buf = new byte[8192];
-                    int read;
-                    long got = 0;
-                    long lastProgressAt = System.currentTimeMillis();
-                    while ((read = in.read(buf)) != -1) {
-                        fos.write(buf, 0, read);
-                        got += read;
-                        lastProgressAt = System.currentTimeMillis();
-                        if (total > 0 && listener != null) {
-                            listener.onProgress((int) (got * 100 / total));
-                        }
-                        // 保护：如果 35 秒内没有任何数据到达，主动断开重试
-                        if (System.currentTimeMillis() - lastProgressAt > 35000) {
-                            throw new IOException("download stalled");
-                        }
-                    }
-                }
-                return; // 成功
-            } catch (IOException e) {
-                lastErr = e;
-                if (attempt == 0) {
-                    if (listener != null) listener.onProgress(0);
-                    try { Thread.sleep(800); } catch (InterruptedException ignored) {}
-                }
-            } finally {
-                if (conn != null) conn.disconnect();
-            }
-        }
-        throw lastErr != null ? lastErr : new IOException("download failed");
-    }
-
-    interface ProgressListener {
-        void onProgress(int percent);
-    }
-
     // 解析 version.json 并判断是否有更新；把结果通过回调交给 JS
     private JSONObject buildUpdateResult(String json) throws Exception {
         JSONObject o = new JSONObject(json);
@@ -367,7 +320,7 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    // 下载 APK 并拉起系统安装器
+    // 下载 APK 并拉起系统安装器（改用系统 DownloadManager，进度走通知栏，不依赖 App 自己算百分比）
     private void installUpdate() {
         // Android 8+ 必须先有「安装未知应用」权限，否则下载完也拉不起安装器。
         // 无权限时跳到系统设置页引导用户开启，并提示回来点「重试」。
@@ -391,66 +344,57 @@ public class MainActivity extends Activity {
             callJs("window.__onInstallDone && window.__onInstallDone('no_apk')");
             return;
         }
-        final String finalApkUrl = normalizeApkUrl(pendingApkUrl);
-        // Android 6-10 需要写外部存储权限（虽然 getExternalFilesDir 在 10+ 不需权限，
-        // 但部分国产 ROM 在未授权时返回 null 或静默失败；先请求最稳）
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-                && Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q
-                && checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
-                != PackageManager.PERMISSION_GRANTED) {
-            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
-            return;
+        final String url = normalizeApkUrl(pendingApkUrl);
+        try {
+            dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
+            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
+            req.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE
+                    | DownloadManager.Request.NETWORK_WIFI);
+            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            req.setTitle("威信更新" + (pendingVersionName != null && !pendingVersionName.isEmpty()
+                    ? " " + pendingVersionName : ""));
+            req.setDescription("正在下载，进度可在通知栏查看");
+            req.setMimeType("application/vnd.android.package-archive");
+            // 下载到应用私有目录，无需任何存储权限
+            req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "update.apk");
+            downloadId = dm.enqueue(req);
+            callJs("window.__onInstallDone && window.__onInstallDone('downloading')");
+        } catch (Exception e) {
+            // 系统下载器不可用，兜底跳转浏览器
+            callJs("window.__onInstallDone && window.__onInstallDone('fallback_browser')");
+            try {
+                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(i);
+            } catch (Exception ignore) {}
         }
-        lastProgress = -1;
-        downloadDone = false;
-        // 10 秒后如果进度仍卡在 0，自动 fallback 到浏览器/系统下载管理器
-        final String browserUrl = finalApkUrl;
-        runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                webView.postDelayed(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!downloadDone && lastProgress <= 0) {
-                            callJs("window.__onInstallDone && window.__onInstallDone('fallback_browser')");
-                            try {
-                                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(browserUrl));
-                                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                                startActivity(i);
-                            } catch (Exception ignore) {}
-                        }
-                    }
-                }, 10000);
-            }
-        });
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                try {
+    }
+
+    // 系统下载完成后：检查状态，成功则拉起安装器
+    private void checkDownloadAndInstall() {
+        if (dm == null) return;
+        DownloadManager.Query q = new DownloadManager.Query();
+        q.setFilterById(downloadId);
+        Cursor c = null;
+        try {
+            c = dm.query(q);
+            if (c != null && c.moveToFirst()) {
+                int status = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_STATUS));
+                if (status == DownloadManager.STATUS_SUCCESSFUL) {
                     File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
                     if (dir == null) dir = getFilesDir();
-                    if (dir != null && !dir.exists()) dir.mkdirs();
                     File apk = new File(dir, "update.apk");
-                    downloadFile(finalApkUrl, apk, new ProgressListener() {
-                        @Override
-                        public void onProgress(int percent) {
-                            lastProgress = percent;
-                            callJs("window.__onInstallProgress && window.__onInstallProgress("
-                                    + percent + ")");
-                        }
-                    });
-                    downloadDone = true;
                     callJs("window.__onInstallDone && window.__onInstallDone('ok')");
                     launchInstall(apk);
-                } catch (Exception e) {
-                    if (!downloadDone) {
-                        downloadDone = true;
-                        callJs("window.__onInstallDone && window.__onInstallDone('err:"
-                                + String.valueOf(e.getMessage()).replace("'", "") + "')");
-                    }
+                } else if (status == DownloadManager.STATUS_FAILED) {
+                    int reason = c.getInt(c.getColumnIndex(DownloadManager.COLUMN_REASON));
+                    callJs("window.__onInstallDone && window.__onInstallDone('err:下载失败 code=" + reason + "')");
                 }
             }
-        }).start();
+        } catch (Exception ignore) {
+        } finally {
+            if (c != null) c.close();
+        }
     }
 
     private void launchInstall(final File apk) {
@@ -524,14 +468,7 @@ public class MainActivity extends Activity {
         }
     }
 
-    @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
-        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        if (requestCode == REQ_STORAGE && grantResults.length > 0
-                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            installUpdate();
-        }
-    }
+    // 下载改用系统 DownloadManager，不需要 WRITE_EXTERNAL_STORAGE 权限，故不再需要权限回调
 
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
@@ -544,6 +481,9 @@ public class MainActivity extends Activity {
 
     @Override
     protected void onDestroy() {
+        if (dlReceiver != null) {
+            try { unregisterReceiver(dlReceiver); } catch (Exception ignore) {}
+        }
         if (webView != null) {
             webView.destroy();
         }
