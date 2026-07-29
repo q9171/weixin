@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.1.8";
+    private static final String FALLBACK_TAG = "v1.1.9";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -426,54 +426,29 @@ public class MainActivity extends Activity {
         }).start();
     }
 
-    // 下载 APK 并拉起系统安装器（改用系统 DownloadManager，进度走通知栏，不依赖 App 自己算百分比）
+    // 更新下载：直接跳转手机浏览器下载 APK。
+    // 浏览器自带醒目的下载进度显示，下载完成后用户点击安装包即可安装，
+    // 不再依赖 DownloadManager 通知栏（部分机型通知被拦截导致看不到进度）。
     private void installUpdate() {
-        // Android 8+ 必须先有「安装未知应用」权限，否则下载完也拉不起安装器。
-        // 无权限时跳到系统设置页引导用户开启，并提示回来点「重试」。
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
-                && !getPackageManager().canRequestPackageInstalls()) {
-            runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    callJs("window.__onInstallDone && window.__onInstallDone('launch_err:请先允许威信安装应用')");
-                    try {
-                        Intent s = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES);
-                        s.setData(Uri.parse("package:" + getPackageName()));
-                        s.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                        startActivity(s);
-                    } catch (Exception ignore) {}
-                }
-            });
-            return;
-        }
         if (pendingApkUrl == null || pendingApkUrl.isEmpty()) {
             callJs("window.__onInstallDone && window.__onInstallDone('no_apk')");
             return;
         }
         final String url = normalizeApkUrl(pendingApkUrl);
-        try {
-            dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            req.setAllowedNetworkTypes(DownloadManager.Request.NETWORK_MOBILE
-                    | DownloadManager.Request.NETWORK_WIFI);
-            req.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            req.setTitle("威信更新" + (pendingVersionName != null && !pendingVersionName.isEmpty()
-                    ? " " + pendingVersionName : ""));
-            req.setDescription("正在下载，进度可在通知栏查看");
-            req.setMimeType("application/vnd.android.package-archive");
-            // 下载到应用私有目录，无需任何存储权限
-            req.setDestinationInExternalFilesDir(this, Environment.DIRECTORY_DOWNLOADS, "update.apk");
-            downloadId = dm.enqueue(req);
-            callJs("window.__onInstallDone && window.__onInstallDone('downloading')");
-        } catch (Exception e) {
-            // 系统下载器不可用，兜底跳转浏览器
-            callJs("window.__onInstallDone && window.__onInstallDone('fallback_browser')");
-            try {
-                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                startActivity(i);
-            } catch (Exception ignore) {}
-        }
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                    i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    startActivity(i);
+                    callJs("window.__onInstallDone && window.__onInstallDone('browser')");
+                } catch (Exception e) {
+                    callJs("window.__onInstallDone && window.__onInstallDone('launch_err:"
+                            + String.valueOf(e.getMessage()).replace("'", "") + "')");
+                }
+            }
+        });
     }
 
     // 系统下载完成后：检查状态，成功则拉起安装器
