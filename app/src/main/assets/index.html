@@ -641,6 +641,9 @@
       } else if(r && r.indexOf('launch_err')===0){
         $('aumNote').textContent = r.slice(11) + '\n请到「手机设置→应用→威信→安装未知应用」开启权限，然后点重试。';
         btn.textContent = '重试'; btn.disabled = false;
+      } else if(r === 'fallback_browser'){
+        $('aumNote').textContent = '应用内下载较慢，已为你跳转浏览器/系统下载器继续下载，完成后请手动安装。';
+        btn.textContent = '确定'; btn.disabled = false;
       } else {
         $('aumNote').textContent = '更新完成。';
       }
@@ -650,6 +653,7 @@
       else if(r === 'no_apk'){ toast('未找到新版安装包'); }
       else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
       else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
+      else if(r === 'fallback_browser'){ toast('已跳转浏览器下载，完成后请手动安装'); }
       else { toast('更新完成'); }
     }
   }
