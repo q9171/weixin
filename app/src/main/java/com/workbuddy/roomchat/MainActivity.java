@@ -2,6 +2,7 @@ package com.workbuddy.roomchat;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageInfo;
@@ -32,6 +33,8 @@ import java.nio.charset.StandardCharsets;
 
 public class MainActivity extends Activity {
 
+    private static final int REQ_STORAGE = 1001;
+
     private WebView webView;
     private static final String PREFS = "roomchat_prefs";
     private static final String KEY_UI_URL = "ui_url";
@@ -53,6 +56,8 @@ public class MainActivity extends Activity {
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
     private volatile String pendingVersionName = "";
+    private volatile int lastProgress = -1;
+    private volatile boolean downloadDone = false;
 
     // 国内移动网络下 cdn.jsdelivr.net 常被限速/首字节极慢，统一切到 gcore 域名
     private String normalizeCdnUrl(String url) {
@@ -228,6 +233,24 @@ public class MainActivity extends Activity {
         return buildUpdateUrl(resolveLatestTag());
     }
 
+    // 把下载源改成 GitHub raw 直链，绕过 jsDelivr 在国内部分网络/ROM 上卡 0 字节的问题
+    private String normalizeApkUrl(String url) {
+        if (url == null) return "";
+        // 输入可能是 cdn/gcore.jsdelivr.net 的 @vX.Y.Z/wei-X.Y.Z.apk，统一转成 raw.githubusercontent.com
+        if (url.contains("jsdelivr.net/gh/Q9171/weixin@")) {
+            int at = url.lastIndexOf("@");
+            int slash = url.indexOf('/', at);
+            if (slash > 0 && slash < url.length() - 1) {
+                String tail = url.substring(slash + 1); // vX.Y.Z/wei-X.Y.Z.apk
+                String[] parts = tail.split("/", 2);
+                if (parts.length == 2) {
+                    return "https://raw.githubusercontent.com/Q9171/weixin/" + parts[0] + "/" + parts[1];
+                }
+            }
+        }
+        return url;
+    }
+
     // 下载文件（用于 APK），带进度回调；失败自动重试 1 次
     private void downloadFile(String urlStr, File out, ProgressListener listener)
             throws IOException {
@@ -298,7 +321,7 @@ public class MainActivity extends Activity {
         String apk = o.optString("apkUrl", "");
         int cur = getCurrentVersionCode();
         boolean has = remoteCode > cur && !apk.isEmpty();
-        pendingApkUrl = has ? normalizeCdnUrl(apk) : "";
+        pendingApkUrl = has ? normalizeApkUrl(normalizeCdnUrl(apk)) : "";
         pendingVersionName = remoteName;
         JSONObject res = new JSONObject();
         res.put("hasUpdate", has);
@@ -306,7 +329,7 @@ public class MainActivity extends Activity {
         res.put("currentVersion", cur);
         res.put("currentName", getCurrentVersionName());
         res.put("note", note);
-        res.put("apkUrl", apk);
+        res.put("apkUrl", pendingApkUrl);
         return res;
     }
 
@@ -375,26 +398,63 @@ public class MainActivity extends Activity {
             callJs("window.__onInstallDone && window.__onInstallDone('no_apk')");
             return;
         }
+        final String finalApkUrl = normalizeApkUrl(pendingApkUrl);
+        // Android 6-10 需要写外部存储权限（虽然 getExternalFilesDir 在 10+ 不需权限，
+        // 但部分国产 ROM 在未授权时返回 null 或静默失败；先请求最稳）
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                && Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q
+                && checkSelfPermission(android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                != PackageManager.PERMISSION_GRANTED) {
+            requestPermissions(new String[]{android.Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQ_STORAGE);
+            return;
+        }
+        lastProgress = -1;
+        downloadDone = false;
+        // 10 秒后如果进度仍卡在 0，自动 fallback 到浏览器/系统下载管理器
+        final String browserUrl = finalApkUrl;
+        runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                webView.postDelayed(new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!downloadDone && lastProgress <= 0) {
+                            callJs("window.__onInstallDone && window.__onInstallDone('fallback_browser')");
+                            try {
+                                Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(browserUrl));
+                                i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(i);
+                            } catch (Exception ignore) {}
+                        }
+                    }
+                }, 10000);
+            }
+        });
         new Thread(new Runnable() {
             @Override
             public void run() {
                 try {
                     File dir = getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS);
                     if (dir == null) dir = getFilesDir();
-                    if (!dir.exists()) dir.mkdirs();
+                    if (dir != null && !dir.exists()) dir.mkdirs();
                     File apk = new File(dir, "update.apk");
-                    downloadFile(pendingApkUrl, apk, new ProgressListener() {
+                    downloadFile(finalApkUrl, apk, new ProgressListener() {
                         @Override
                         public void onProgress(int percent) {
+                            lastProgress = percent;
                             callJs("window.__onInstallProgress && window.__onInstallProgress("
                                     + percent + ")");
                         }
                     });
+                    downloadDone = true;
                     callJs("window.__onInstallDone && window.__onInstallDone('ok')");
                     launchInstall(apk);
                 } catch (Exception e) {
-                    callJs("window.__onInstallDone && window.__onInstallDone('err:"
-                            + String.valueOf(e.getMessage()).replace("'", "") + "')");
+                    if (!downloadDone) {
+                        downloadDone = true;
+                        callJs("window.__onInstallDone && window.__onInstallDone('err:"
+                                + String.valueOf(e.getMessage()).replace("'", "") + "')");
+                    }
                 }
             }
         }).start();
@@ -467,6 +527,15 @@ public class MainActivity extends Activity {
 
         @JavascriptInterface
         public void installUpdate() {
+            installUpdate();
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_STORAGE && grantResults.length > 0
+                && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
             installUpdate();
         }
     }
