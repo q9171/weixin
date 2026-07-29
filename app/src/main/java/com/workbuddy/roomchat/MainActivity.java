@@ -56,7 +56,6 @@ public class MainActivity extends Activity {
     private BroadcastReceiver dlReceiver;
     private static final String PREFS = "roomchat_prefs";
     private static final String KEY_UI_URL = "ui_url";
-    private static final String KEY_UPDATE_URL = "update_url";
     private static final String LOCAL = "file:///android_asset/index.html";
 
     // 更新信息地址解析策略（关键：绕开 jsDelivR 标签缓存限制）：
@@ -221,14 +220,6 @@ public class MainActivity extends Activity {
         return p.getString(KEY_UI_URL, "");
     }
 
-    // 用户手动设置的更新地址（SharedPreferences）。为空表示「自动解析」。
-    private String getStoredUpdateUrl() {
-        SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
-        String u = p.getString(KEY_UPDATE_URL, "");
-        if (u != null && !u.trim().isEmpty()) return u.trim();
-        return "";
-    }
-
     @SuppressWarnings("deprecation")
     private int getCurrentVersionCode() {
         try {
@@ -357,10 +348,8 @@ public class MainActivity extends Activity {
         return "https://cdn.jsdelivr.net/gh/" + REPO + "@" + t + "/version.json";
     }
 
-    // 解析最终要检查的更新地址：用户手动设置优先，否则自动发现最新标签
+    // 解析最终要检查的更新地址：自动发现最新标签
     private String resolveUpdateUrl() {
-        String u = getStoredUpdateUrl();
-        if (u != null && !u.isEmpty()) return u;
         return buildUpdateUrl(resolveLatestTag());
     }
 
@@ -559,19 +548,6 @@ public class MainActivity extends Activity {
         @JavascriptInterface
         public String getVersion() {
             return getCurrentVersionName() + " (" + getCurrentVersionCode() + ")";
-        }
-
-        @JavascriptInterface
-        public String getUpdateUrl() {
-            String u = getStoredUpdateUrl();
-            return (u == null || u.isEmpty()) ? "auto" : u;
-        }
-
-        @JavascriptInterface
-        public void setUpdateUrl(String url) {
-            SharedPreferences p = getSharedPreferences(PREFS, MODE_PRIVATE);
-            if (url == null) url = "";
-            p.edit().putString(KEY_UPDATE_URL, url.trim()).apply();
         }
 
         @JavascriptInterface
