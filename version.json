@@ -1,6 +1,6 @@
 {
-  "versionCode": 20,
-  "versionName": "1.1.9",
-  "note": "v1.1.9 更新：\n• 更新下载方式改为跳转手机浏览器，下载进度一目了然\n• 下载完成后点击安装包即可安装，不再卡「正在下载」\n• 沿用浅紫色聊天背景与 Android 14 闪退修复",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.9/wei-1.1.9.apk"
+  "versionCode": 21,
+  "versionName": "1.2.0",
+  "note": "v1.2.0 更新：\n• 新增「聊天背景」设置：浅红 / 浅蓝 / 浅紫随心切换\n• 选择立即生效并自动记住，下次打开还是你选的颜色\n• 沿用浏览器下载更新与 Android 14 闪退修复",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.2.0/wei-1.2.0.apk"
 }
