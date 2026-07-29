@@ -564,7 +564,7 @@
         + '<div class="changelog" style="margin-top:6px"></div>'
         + '<button class="btn" id="doInstall" style="margin-top:10px">下载并安装</button>';
       box.querySelector('.changelog').textContent = (res.note||'点击「下载并安装」升级到最新版。');
-      $('doInstall').onclick = function(){ doInstall(); };
+      $('doInstall').onclick = function(){ pendingApkUrl = res.apkUrl || ''; doInstall(); };
     } else {
       box.textContent = '已是最新版本（v' + (res.currentName||'?') + '）。';
     }
@@ -572,24 +572,42 @@
   // installFromModal=true：从「进入App自动弹出的更新弹窗」触发，进度反馈显示在弹窗里；
   // =false：从「设置→检查更新」触发，进度显示在设置面板内的进度条。
   var installFromModal = false;
+  var pendingApkUrl = '';
+  var installTimer = null;
+  var installCallbackReceived = false;
   function doInstall(fromModal){
     var b = bridge();
     if(!b || !b.installUpdate){ toast('当前 App 版本不支持自动更新'); return; }
     installFromModal = !!fromModal;
+    installCallbackReceived = false;
+    if(installTimer){ clearTimeout(installTimer); installTimer = null; }
     if(installFromModal){
       var btn = $('aumUpdate'); btn.disabled = true; btn.textContent = '正在打开浏览器…';
-      $('aumNote').textContent = '即将跳转到手机浏览器下载新版本…';
+      $('aumNote').textContent = '即将跳转到手机浏览器下载新版本…\n若浏览器没有自动打开，请长按复制链接：' + (pendingApkUrl || '');
     } else {
       $('updateResult').style.display='none';
       var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
     }
     b.installUpdate();
+    // 兜底：1.5 秒后若仍未收到回调（部分 ROM 切后台导致 JS 回调丢失），自动关闭弹窗并提示手动下载
+    installTimer = setTimeout(function(){
+      if(installCallbackReceived) return;
+      if(installFromModal){
+        $('autoUpdateModal').style.display='none';
+        $('aumUpdate').textContent = '立即更新'; $('aumUpdate').disabled = false;
+      } else {
+        $('updProgress').style.display='none';
+      }
+      var url = pendingApkUrl || 'https://gcore.jsdelivr.net/gh/Q9171/weixin@v' + ($('aumVer').textContent||'1.2.1') + '/wei-1.2.1.apk';
+      toast('浏览器未自动打开，请复制链接手动下载：' + url);
+    }, 1500);
   }
   function onUpdateChecked(res){ showUpdateResult(res); }
   function onAutoUpdate(res){
     if(!res || !res.hasUpdate) return;
     $('aumVer').textContent = res.versionName || '?';
     $('aumNote').textContent = (res.note || '点击「立即更新」即可升级到最新版。');
+    pendingApkUrl = res.apkUrl || '';
     $('autoUpdateModal').style.display = 'flex';
     var ban = $('updateBanner'); if(ban) ban.style.display='none';
     Sound.update();
@@ -603,6 +621,8 @@
     }
   }
   function onInstallDone(r){
+    installCallbackReceived = true;
+    if(installTimer){ clearTimeout(installTimer); installTimer = null; }
     if(installFromModal){
       var btn = $('aumUpdate');
       if(r === 'ok'){
@@ -618,12 +638,6 @@
       } else if(r && r.indexOf('launch_err')===0){
         $('aumNote').textContent = '无法打开浏览器：' + r.slice(11) + '\n请手动用浏览器打开下载地址，或稍后重试。';
         btn.textContent = '重试'; btn.disabled = false;
-      } else if(r === 'browser' || r === 'fallback_browser' || r === 'downloading'){
-        // 已跳转浏览器下载：关闭弹窗，浏览器会显示下载进度，下载完成后点击安装包安装
-        $('autoUpdateModal').style.display='none';
-        toast('已跳转浏览器下载，下载完成后点击安装包安装');
-        btn.textContent = '立即更新'; btn.disabled = false;
-        return;
       } else {
         $('aumNote').textContent = '更新完成。';
       }
@@ -633,7 +647,7 @@
       else if(r === 'no_apk'){ toast('未找到新版安装包'); }
       else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
       else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
-      else if(r === 'browser' || r === 'fallback_browser' || r === 'downloading'){ toast('已跳转浏览器下载，下载完成后点击安装包安装'); }
+      else if(r === 'browser' || r === 'fallback_browser' || r === 'downloading'){ toast('已跳转浏览器下载，完成后点击安装包安装'); }
       else { toast('更新完成'); }
     }
   }
