@@ -1,6 +1,6 @@
 {
-  "versionCode": 15,
-  "versionName": "1.1.4",
-  "note": "v1.1.4 更新：\n• 修复部分机型打开 App 即闪退的问题（增强页面渲染稳定性，崩溃时不再闪退）\n• 启动异常会在屏幕上显示具体错误，便于定位\n• 沿用系统下载器更新（通知栏真实进度、下载到私有目录、无需存储权限）",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.4/wei-1.1.4.apk"
+  "versionCode": 16,
+  "versionName": "1.1.5",
+  "note": "v1.1.5 更新：\n• 修复 Android 14 系统上的启动闪退：为下载完成广播添加 RECEIVER_NOT_EXPORTED 标志\n• 保留崩溃兜底：异常会显示在屏幕上，方便截图定位\n• 沿用系统下载器更新（通知栏真实进度、下载到私有目录、无需存储权限）",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.5/wei-1.1.5.apk"
 }
