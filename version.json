@@ -1,6 +1,6 @@
 {
-  "versionCode": 18,
-  "versionName": "1.1.7",
-  "note": "v1.1.7 更新：\n• 优化更新弹窗：开始下载后可关闭窗口，让下载在后台继续\n• 下载完成后弹窗自动关闭，系统安装器会自动弹出\n• 沿用 Android 14 闪退修复与系统下载器更新",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.7/wei-1.1.7.apk"
+  "versionCode": 19,
+  "versionName": "1.1.8",
+  "note": "v1.1.8 更新：\n• 聊天背景更换为浅紫色，气泡与文字配色同步适配\n• 沿用可关闭的后台下载更新弹窗\n• 沿用 Android 14 闪退修复与系统下载器更新",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.8/wei-1.1.8.apk"
 }
