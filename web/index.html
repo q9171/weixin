@@ -51,16 +51,20 @@
   /* 聊天 */
   #chat{display:none;flex-direction:column;height:100%;height:100dvh}
   .top .back{background:none;border:none;color:var(--accent);font-size:14px;cursor:pointer;padding:6px 4px;margin-right:4px}
-  #msgs{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;background:#ede7f6}
+  /* 聊天背景主题（默认浅紫，可在设置里切换：浅红/浅蓝/浅紫） */
+  body{--chat-bg:#ede7f6;--chat-name:#7e6fa6;--chat-meta:#9a8fbd;--chat-sys:#7e6fa6;--chat-sysbg:#e0d6f0;--chat-otext:#3a3550;--chat-shadow:rgba(103,58,183,.12)}
+  body.bg-red{--chat-bg:#fdeaea;--chat-name:#a86a6a;--chat-meta:#c09090;--chat-sys:#a86a6a;--chat-sysbg:#f5d5d5;--chat-otext:#4a3535;--chat-shadow:rgba(183,58,58,.12)}
+  body.bg-blue{--chat-bg:#e3f2fd;--chat-name:#6a87a8;--chat-meta:#8fa8c0;--chat-sys:#6a87a8;--chat-sysbg:#d0e4f5;--chat-otext:#35404a;--chat-shadow:rgba(58,120,183,.12)}
+  #msgs{flex:1;overflow-y:auto;padding:14px 12px 6px;display:flex;flex-direction:column;gap:9px;background:var(--chat-bg)}
   .row{display:flex;flex-direction:column;max-width:78%}
   .row.me{align-self:flex-end;align-items:flex-end}
   .row.other{align-self:flex-start;align-items:flex-start}
-  .name{font-size:11px;color:#7e6fa6;margin:0 6px 3px}
+  .name{font-size:11px;color:var(--chat-name);margin:0 6px 3px}
   .bubble{padding:9px 12px;border-radius:14px;font-size:14.5px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap}
   .row.me .bubble{background:var(--me);color:var(--me-text);border-bottom-right-radius:4px}
-  .row.other .bubble{background:#ffffff;color:#3a3550;border-bottom-left-radius:4px;box-shadow:0 1px 2px rgba(103,58,183,.12)}
-  .meta{font-size:10px;color:#9a8fbd;margin:3px 6px 0}
-  .sys{align-self:center;font-size:11.5px;color:#7e6fa6;background:#e0d6f0;padding:4px 10px;border-radius:10px;margin:2px 0}
+  .row.other .bubble{background:#ffffff;color:var(--chat-otext);border-bottom-left-radius:4px;box-shadow:0 1px 2px var(--chat-shadow)}
+  .meta{font-size:10px;color:var(--chat-meta);margin:3px 6px 0}
+  .sys{align-self:center;font-size:11.5px;color:var(--chat-sys);background:var(--chat-sysbg);padding:4px 10px;border-radius:10px;margin:2px 0}
   .typing{align-self:flex-start;font-size:11.5px;color:var(--muted);padding:2px 6px;height:16px}
   .compose{display:flex;gap:8px;padding:10px 12px;background:var(--panel);border-top:1px solid var(--line);padding-bottom:max(10px,env(safe-area-inset-bottom))}
   .compose input{flex:1;background:var(--panel2);border-radius:20px;padding:11px 16px}
@@ -97,6 +101,13 @@
 
   /* 音效开关 */
   .switchRow{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:#e9edf0;margin-bottom:6px}
+
+  /* 聊天背景颜色选择 */
+  .bgRow{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;color:#e9edf0;margin:14px 0 6px}
+  .bgOpts{display:flex;gap:12px}
+  .bgOpt{width:34px;height:34px;border-radius:50%;border:2px solid var(--line);cursor:pointer;padding:0;position:relative}
+  .bgOpt.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(56,176,222,.35)}
+  .bgOpt.sel::after{content:'✓';position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);font-size:15px;color:#555;font-weight:700}
   .switch{position:relative;display:inline-block;width:44px;height:24px;flex:none}
   .switch input{opacity:0;width:0;height:0}
   .slider{position:absolute;cursor:pointer;inset:0;background:#1b4360;border-radius:24px;transition:.2s}
@@ -207,6 +218,14 @@
       <button class="close" id="setClose">✕</button>
       <h2>设置</h2>
       <div class="switchRow"><span>交互音效</span><label class="switch"><input type="checkbox" id="soundToggle" checked /><span class="slider"></span></label></div>
+
+      <div class="bgRow"><span>聊天背景</span>
+        <div class="bgOpts">
+          <button class="bgOpt" data-bg="red" title="浅红" style="background:#fdeaea"></button>
+          <button class="bgOpt" data-bg="blue" title="浅蓝" style="background:#e3f2fd"></button>
+          <button class="bgOpt" data-bg="purple" title="浅紫" style="background:#ede7f6"></button>
+        </div>
+      </div>
 
       <div style="height:1px;background:var(--line);margin:18px 0"></div>
       <h2>应用更新</h2>
@@ -648,6 +667,30 @@
     try{ localStorage.setItem('rc_sound', on ? '1' : '0'); }catch(e){}
     if(on) Sound.tap();
   };
+  // 聊天背景颜色：浅红/浅蓝/浅紫，选择立即生效并记住
+  function applyChatBg(v){
+    document.body.classList.remove('bg-red','bg-blue');
+    if(v === 'red') document.body.classList.add('bg-red');
+    else if(v === 'blue') document.body.classList.add('bg-blue');
+    var opts = document.querySelectorAll('.bgOpt');
+    for(var i=0;i<opts.length;i++){
+      opts[i].classList.toggle('sel', opts[i].getAttribute('data-bg') === v);
+    }
+  }
+  (function(){
+    var saved = 'purple';
+    try{ saved = localStorage.getItem('rc_chatbg') || 'purple'; }catch(e){}
+    applyChatBg(saved);
+    var opts = document.querySelectorAll('.bgOpt');
+    for(var i=0;i<opts.length;i++){
+      opts[i].onclick = function(){
+        var v = this.getAttribute('data-bg');
+        applyChatBg(v);
+        try{ localStorage.setItem('rc_chatbg', v); }catch(e){}
+        toast('聊天背景已切换');
+      };
+    }
+  })();
   // 自动更新弹窗按钮
   $('aumUpdate').onclick = function(){ doInstall(true); };
   $('aumLater').onclick = function(){ $('autoUpdateModal').style.display='none'; };
