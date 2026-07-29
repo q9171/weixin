@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.1.4";
+    private static final String FALLBACK_TAG = "v1.1.7";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
