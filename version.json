@@ -1,6 +1,6 @@
 {
-  "versionCode": 12,
-  "versionName": "1.1.1",
-  "note": "v1.1.1 更新：\n• 修复应用内更新下载卡在 0% 的问题（改走 gcore.jsdelivr.net 下载 + 10秒无进度自动跳转浏览器下载）\n• 增加存储权限请求，避免国产 ROM 静默拦截下载\n• 修复单人频道自己发的消息被当成对方消息回显的问题\n• 聊天记录本地保存，退出频道再进入不丢失",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.1/wei-1.1.1.apk"
+  "versionCode": 13,
+  "versionName": "1.1.2",
+  "note": "v1.1.2 更新：\n• 简化设置界面：移除普通用户看不懂的「中转服务器」「界面地址」等技术选项\n• 保留交互音效开关与应用更新入口",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.2/wei-1.1.2.apk"
 }
