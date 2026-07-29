@@ -558,10 +558,8 @@
     if(!b || !b.installUpdate){ toast('当前 App 版本不支持自动更新'); return; }
     installFromModal = !!fromModal;
     if(installFromModal){
-      var btn = $('aumUpdate'); btn.disabled = true; btn.textContent = '正在下载…';
-      var later = $('aumLater');
-      if(later){ later.style.display='inline-block'; later.textContent = '后台下载，关闭窗口'; }
-      $('aumNote').textContent = '正在下载新版本，进度可在手机通知栏查看…';
+      var btn = $('aumUpdate'); btn.disabled = true; btn.textContent = '正在打开浏览器…';
+      $('aumNote').textContent = '即将跳转到手机浏览器下载新版本…';
     } else {
       $('updateResult').style.display='none';
       var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
@@ -599,15 +597,14 @@
         $('aumNote').textContent = '下载失败：' + r.slice(4) + '。请检查网络后点重试。';
         btn.textContent = '重试'; btn.disabled = false;
       } else if(r && r.indexOf('launch_err')===0){
-        $('aumNote').textContent = r.slice(11) + '\n请到「手机设置→应用→威信→安装未知应用」开启权限，然后点重试。';
+        $('aumNote').textContent = '无法打开浏览器：' + r.slice(11) + '\n请手动用浏览器打开下载地址，或稍后重试。';
         btn.textContent = '重试'; btn.disabled = false;
-      } else if(r === 'fallback_browser'){
-        $('aumNote').textContent = '应用内下载较慢，已为你跳转浏览器/系统下载器继续下载，完成后请手动安装。';
-        btn.textContent = '确定'; btn.disabled = false;
-      } else if(r === 'downloading'){
-        // 系统下载器已开始下载：保持「正在下载…」状态，真实进度在手机通知栏查看
-        btn.textContent = '正在下载…';
-        var later = $('aumLater'); if(later){ later.style.display='inline-block'; later.textContent = '后台下载，关闭窗口'; }
+      } else if(r === 'browser' || r === 'fallback_browser' || r === 'downloading'){
+        // 已跳转浏览器下载：关闭弹窗，浏览器会显示下载进度，下载完成后点击安装包安装
+        $('autoUpdateModal').style.display='none';
+        toast('已跳转浏览器下载，下载完成后点击安装包安装');
+        btn.textContent = '立即更新'; btn.disabled = false;
+        return;
       } else {
         $('aumNote').textContent = '更新完成。';
       }
@@ -617,8 +614,7 @@
       else if(r === 'no_apk'){ toast('未找到新版安装包'); }
       else if(r && r.indexOf('err')===0){ toast('下载失败：' + r.slice(4)); }
       else if(r && r.indexOf('launch_err')===0){ toast('无法启动安装：' + r.slice(11)); }
-      else if(r === 'fallback_browser'){ toast('已跳转浏览器下载，完成后请手动安装'); }
-      else if(r === 'downloading'){ i.style.display='none'; toast('正在后台下载，进度见通知栏'); }
+      else if(r === 'browser' || r === 'fallback_browser' || r === 'downloading'){ toast('已跳转浏览器下载，下载完成后点击安装包安装'); }
       else { toast('更新完成'); }
     }
   }
