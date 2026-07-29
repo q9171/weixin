@@ -118,7 +118,12 @@ public class MainActivity extends Activity {
                 if (id == downloadId) checkDownloadAndInstall();
             }
         };
-        registerReceiver(dlReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        // Android 14+ 动态注册广播必须指定 RECEIVER_EXPORTED/NOT_EXPORTED，否则报 SecurityException
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(dlReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE), Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(dlReceiver, new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        }
 
         setContentView(webView);
     }
