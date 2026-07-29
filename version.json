@@ -1,6 +1,6 @@
 {
-  "versionCode": 13,
-  "versionName": "1.1.2",
-  "note": "v1.1.2 更新：\n• 简化设置界面：移除普通用户看不懂的「中转服务器」「界面地址」等技术选项\n• 保留交互音效开关与应用更新入口",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.2/wei-1.1.2.apk"
+  "versionCode": 14,
+  "versionName": "1.1.3",
+  "note": "v1.1.3 更新：\n• 修复「应用内更新」下载进度卡在 0% 的问题\n• 改用系统下载器下载更新，真实进度显示在手机通知栏\n• 下载到应用私有目录，无需任何存储权限，更安全",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.1.3/wei-1.1.3.apk"
 }
