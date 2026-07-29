@@ -68,7 +68,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.2.0";
+    private static final String FALLBACK_TAG = "v1.2.1";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -441,8 +441,11 @@ public class MainActivity extends Activity {
                 try {
                     Intent i = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                     i.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    startActivity(i);
+                    // 显式声明 MIME 类型，提高部分 ROM（如 ColorOS）识别浏览器/下载器的概率
+                    i.setDataAndType(Uri.parse(url), "application/vnd.android.package-archive");
+                    // 先回调 JS 再启动浏览器：避免 App 被切后台后 JS 回调丢失，导致弹窗卡住
                     callJs("window.__onInstallDone && window.__onInstallDone('browser')");
+                    startActivity(Intent.createChooser(i, "选择浏览器下载"));
                 } catch (Exception e) {
                     callJs("window.__onInstallDone && window.__onInstallDone('launch_err:"
                             + String.valueOf(e.getMessage()).replace("'", "") + "')");
