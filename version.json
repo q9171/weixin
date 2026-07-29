@@ -1,6 +1,6 @@
 {
-  "versionCode": 21,
-  "versionName": "1.2.0",
-  "note": "v1.2.0 更新：\n• 新增「聊天背景」设置：浅红 / 浅蓝 / 浅紫随心切换\n• 选择立即生效并自动记住，下次打开还是你选的颜色\n• 沿用浏览器下载更新与 Android 14 闪退修复",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.2.0/wei-1.2.0.apk"
+  "versionCode": 22,
+  "versionName": "1.2.1",
+  "note": "v1.2.1 更新：\n• 修复点击「立即更新」后弹窗卡住不跳浏览器的问题\n• 新增超时兜底：浏览器未自动打开时自动关闭弹窗并提示手动下载链接\n• 保留聊天背景颜色设置（浅红/浅蓝/浅紫）与 Android 14 闪退修复",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.2.1/wei-1.2.1.apk"
 }
