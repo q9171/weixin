@@ -51,7 +51,7 @@ public class MainActivity extends Activity {
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.0.6";
+    private static final String FALLBACK_TAG = "v1.1.1";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -233,22 +233,15 @@ public class MainActivity extends Activity {
         return buildUpdateUrl(resolveLatestTag());
     }
 
-    // 把下载源改成 GitHub raw 直链，绕过 jsDelivr 在国内部分网络/ROM 上卡 0 字节的问题
+    // 国内 gcore.jsdelivr.net 速度最好，把任何 jsDelivr/cdn 域名统一切到 gcore；
+    // raw.githubusercontent.com 在国内部分网络也会被墙/限速，因此也转成 gcore。
     private String normalizeApkUrl(String url) {
         if (url == null) return "";
-        // 输入可能是 cdn/gcore.jsdelivr.net 的 @vX.Y.Z/wei-X.Y.Z.apk，统一转成 raw.githubusercontent.com
-        if (url.contains("jsdelivr.net/gh/Q9171/weixin@")) {
-            int at = url.lastIndexOf("@");
-            int slash = url.indexOf('/', at);
-            if (slash > 0 && slash < url.length() - 1) {
-                String tail = url.substring(slash + 1); // vX.Y.Z/wei-X.Y.Z.apk
-                String[] parts = tail.split("/", 2);
-                if (parts.length == 2) {
-                    return "https://raw.githubusercontent.com/Q9171/weixin/" + parts[0] + "/" + parts[1];
-                }
-            }
+        if (url.startsWith("https://raw.githubusercontent.com/Q9171/weixin/")) {
+            String tail = url.substring("https://raw.githubusercontent.com/Q9171/weixin/".length());
+            return "https://gcore.jsdelivr.net/gh/Q9171/weixin@" + tail.replaceFirst("/", "/");
         }
-        return url;
+        return normalizeCdnUrl(url);
     }
 
     // 下载文件（用于 APK），带进度回调；失败自动重试 1 次
