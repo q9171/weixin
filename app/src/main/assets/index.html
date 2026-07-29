@@ -211,11 +211,7 @@
       <div style="height:1px;background:var(--line);margin:18px 0"></div>
       <h2>应用更新</h2>
       <div class="ver" id="verLabel">当前版本：—</div>
-      <label>更新检查地址 (version.json)</label>
-      <input id="updateUrlInput" autocomplete="off" placeholder="https://cdn.jsdelivr.net/gh/Q9171/weixin@v1.0.3/version.json" />
-      <div class="hint">把更新信息文件放在本地址。留空用默认地址。改完点「保存更新地址」。</div>
-      <button class="btn" id="saveUpdateUrl" style="background:#2f3e4d">保存更新地址</button>
-      <button class="btn" id="checkUpdateBtn" style="margin-top:10px">检查更新</button>
+      <button class="btn" id="checkUpdateBtn">检查更新</button>
       <div class="upd" id="updateResult" style="display:none"></div>
       <div class="progress" id="updProgress"><i></i></div>
     </div>
@@ -633,16 +629,7 @@
     if(b && b.checkUpdate){ b.checkUpdate(); toast('正在检查…'); }
     else { toast('当前 App 版本不支持'); }
   };
-  $('saveUpdateUrl').onclick = function(){
-    var b = bridge();
-    if(!b || !b.setUpdateUrl){ toast('当前 App 版本不支持'); return; }
-    var u = $('updateUrlInput').value.trim();
-    if(u && u.indexOf('://') < 0){ toast('请填写完整网址(含 http/https)'); return; }
-    b.setUpdateUrl(u);
-    toast('已保存更新地址');
-  };
-  // 预填更新地址 / 版本号
-  try{ var b2 = bridge(); if(b2 && b2.getUpdateUrl){ $('updateUrlInput').value = b2.getUpdateUrl() || ''; } }catch(e){}
+  // 预填版本号
   setVer();
 
   // 音效初始化：加载开关 + 首次交互恢复音频 + 按钮轻点音
