@@ -62,13 +62,14 @@ public class MainActivity extends Activity {
     // jsDelivR 对「标签名」做永久缓存——移动/重建同名标签、purge 都无法刷新旧内容。
     // 因此发版必须用「全新版本标签名」（如 v1.0.4），App 不能写死某个标签。
     // 本机先问 data.jsdelivr.com（实时、不缓存）拿到最新版本标签名，
-    // 再取 https://cdn.jsdelivr.net/gh/Q9171/weixin@<最新标签>/version.json 。
+    // 再取 https://gcore.jsdelivr.net/gh/Q9171/weixin@<最新标签>/version.json 。
+    // 国内移动网络下 cdn.jsdelivr.net 常被限速/首字节极慢，统一走 gcore 更快更稳。
     // 这样已装老用户也能自动收到更新提示，且每次都是新标签→CDN 即时返回新内容。
     // 用户可在 App 设置里手动改更新地址（覆盖自动解析）。
     private static final String REPO = "Q9171/weixin";
     private static final String META_URL = "https://data.jsdelivr.com/v1/packages/gh/" + REPO;
     // 兜底：元数据接口不可用时，退回最近已知版本标签（仍是全新标签名，CDN 即时）
-    private static final String FALLBACK_TAG = "v1.2.1";
+    private static final String FALLBACK_TAG = "v1.2.2";
 
     // 最近一次「检查更新」得到的远程信息，供「下载并安装」使用
     private volatile String pendingApkUrl = "";
@@ -343,9 +344,10 @@ public class MainActivity extends Activity {
     }
 
     // 拼出某个标签对应的 version.json 地址（data API 给的版本号可能缺 v 前缀，这里补回）
+    // 统一走 gcore.jsdelivr.net：国内移动网络下比 cdn.jsdelivr.net 首字节更快、更不易超时
     private String buildUpdateUrl(String ver) {
         String t = (ver != null && ver.startsWith("v")) ? ver : ("v" + ver);
-        return "https://cdn.jsdelivr.net/gh/" + REPO + "@" + t + "/version.json";
+        return "https://gcore.jsdelivr.net/gh/" + REPO + "@" + t + "/version.json";
     }
 
     // 解析最终要检查的更新地址：自动发现最新标签
