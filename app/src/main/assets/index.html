@@ -28,10 +28,12 @@
   .chanlist{flex:1;overflow-y:auto;padding:12px}
   .chan{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:10px}
   .chan-info{flex:1;min-width:0}
-  .chan-title{font-size:15px;font-weight:600;word-break:break-all}
+  .chan-title{font-size:15px;font-weight:600;word-break:break-all;display:flex;align-items:center;gap:8px}
   .chan-sub{font-size:11.5px;color:var(--muted);margin-top:2px}
   .chan-enter{background:var(--accent);color:#fff;border:none;border-radius:20px;padding:9px 16px;font-size:14px;font-weight:600;cursor:pointer}
   .chan-del{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 6px;line-height:1}
+  .badge{display:none;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:#ff5b5b;color:#fff;font-size:11px;font-weight:700;align-items:center;justify-content:center}
+  .badge.show{display:inline-flex}
   .fab{margin:0 14px 14px;padding:13px;border:none;border-radius:12px;background:var(--accent);color:#fff;font-size:15.5px;font-weight:600;cursor:pointer;margin-bottom:max(14px,env(safe-area-inset-bottom))}
   .empty{text-align:center;color:var(--muted);font-size:13px;padding:40px 20px;line-height:1.6}
 
@@ -78,12 +80,43 @@
   .emoji-grid button:active{background:var(--panel2)}
   .changelog{white-space:pre-line;line-height:1.6}
 
+  /* 时间分组 / 已读分隔线 */
+  .date-sep{align-self:center;font-size:11px;color:var(--chat-sys);background:var(--chat-sysbg);padding:3px 12px;border-radius:10px;margin:10px 0 2px;opacity:.9}
+  .read-sep{align-self:center;font-size:10.5px;color:var(--chat-meta);margin:4px 0 0;opacity:.8}
+  /* 引用显示 */
+  .quote{font-size:12px;color:var(--chat-meta);background:rgba(0,0,0,.06);border-left:3px solid var(--accent);border-radius:6px;padding:5px 9px;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row.me .quote{color:rgba(255,255,255,.85);background:rgba(255,255,255,.15)}
+  .revoked{align-self:center;font-size:11.5px;color:var(--chat-meta);font-style:italic;opacity:.8;margin:2px 0}
+  mark{background:#ffe58a;color:#333;padding:0 2px;border-radius:3px}
+
+  /* 引用回复条 */
+  #replyBar{display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--panel2);border-top:1px solid var(--line);font-size:12.5px;color:#cfe6f2}
+  #replyBar.show{display:flex}
+  #replyBar .rb-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  #replyBar .rb-close{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+
+  /* 搜索栏 */
+  #searchBar{display:none;align-items:center;gap:8px;padding:8px 12px;background:var(--panel);border-bottom:1px solid var(--line)}
+  #searchBar.show{display:flex}
+  #searchInput{flex:1;background:var(--panel2);border-radius:20px;padding:9px 14px;font-size:14px}
+  #searchCount{font-size:12px;color:var(--muted);white-space:nowrap}
+  #searchClose{background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;padding:2px 6px}
+
+  /* 长按菜单 */
+  #ctxMenu{position:fixed;z-index:70;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;box-shadow:0 12px 40px rgba(0,0,0,.5);display:none;min-width:160px}
+  #ctxMenu.show{display:block}
+  #ctxMenu button{display:flex;width:100%;align-items:center;gap:10px;background:none;border:none;color:#e9edf0;font-size:14px;padding:12px 14px;border-radius:10px;cursor:pointer;text-align:left}
+  #ctxMenu button:active{background:var(--panel2)}
+  #ctxMenu button .ic{font-size:17px;width:22px;text-align:center}
+  #ctxMask{position:fixed;inset:0;z-index:65;display:none}
+  #ctxMask.show{display:block}
+
   /* 设置 */
   #settings{position:fixed;top:0;right:0;bottom:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.55);display:none;padding:24px;padding-bottom:max(24px,env(safe-area-inset-bottom));z-index:25;overflow-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-y}
   #settings .card{width:100%;max-width:360px;margin:20px auto;position:relative}
   .card h2{margin:0 0 6px;font-size:16px}
   .close{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
-  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#000a;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;z-index:40;pointer-events:none}
+  .toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:#000a;color:#fff;padding:9px 16px;border-radius:20px;font-size:13px;opacity:0;transition:.25s;z-index:80;pointer-events:none;max-width:80%;text-align:center}
   .toast.show{opacity:1}
 
   /* 自动更新横幅 */
@@ -200,10 +233,20 @@
         <div class="title" id="roomTitle">频道</div>
         <div class="sub" id="onlineSub">在线人数：1</div>
       </div>
+      <button class="gear" id="searchBtn" style="margin-left:auto;font-size:16px">🔍</button>
       <div class="status" id="status"><span class="led"></span><span id="statusText">连接中…</span></div>
+    </div>
+    <div id="searchBar">
+      <input id="searchInput" placeholder="搜索聊天记录…" autocomplete="off" />
+      <span id="searchCount"></span>
+      <button id="searchClose">✕</button>
     </div>
     <div id="msgs"></div>
     <div class="typing" id="typing"></div>
+    <div id="replyBar">
+      <span class="rb-text"></span>
+      <button class="rb-close" id="replyClose">✕</button>
+    </div>
     <div class="emoji-panel" id="emojiPanel"></div>
     <div class="compose">
       <button class="emoji-btn" id="emojiBtn" type="button">😊</button>
@@ -253,6 +296,10 @@
     </div>
   </div>
 
+  <!-- 长按消息菜单 -->
+  <div id="ctxMask"></div>
+  <div id="ctxMenu"></div>
+
   <div class="toast" id="toast"></div>
 </div>
 
@@ -264,8 +311,29 @@
   var client = null, room = '', me = '', broker = 'wss://broker.emqx.io:8084/mqtt';
   var topicBase = function(r){ return 'roomchat/' + r; };
   var presenceTopic = function(r){ return 'roomchat/' + r + '/presence'; };
+  var readTopic = function(r){ return 'roomchat/' + r + '/read'; };
   var onlineSet = {};
   var channels = [];
+  var unreadMap = {};   // room -> 未读数
+  var peerReadTs = 0;   // 对方已读到的最后 ts（本视角）
+  var inChat = false;   // 是否正在聊天页（用于未读路由）
+  var subscribed = {};  // 已订阅的频道集合
+  var lastRenderedDay = ''; // 用于时间分组
+  var replyTarget = null; // 引用目标消息对象
+  var searchActive = false;
+  var currentKeyword = '';
+
+  function genId(){ return 'm_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+  function dayKey(ts){ var d=new Date(ts); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function dayLabel(ts){
+    var d = new Date(ts), now = new Date();
+    var a = new Date(d.getFullYear(),d.getMonth(),d.getDate());
+    var b = new Date(now.getFullYear(),now.getMonth(),now.getDate());
+    var diff = Math.round((b - a) / 86400000);
+    if(diff === 0) return '今天';
+    if(diff === 1) return '昨天';
+    return (d.getMonth()+1) + '月' + d.getDate() + '日';
+  }
 
   function toast(msg){
     var t = $('toast'); t.textContent = msg; t.classList.add('show');
@@ -318,10 +386,12 @@
     try{
       var b = localStorage.getItem('rc_broker'); if(b) broker = b;
       var c = localStorage.getItem('rc_channels'); if(c) channels = JSON.parse(c) || [];
+      var u = localStorage.getItem('rc_unread'); if(u){ try{ unreadMap = JSON.parse(u) || {}; }catch(e){} }
       var n = localStorage.getItem('rc_name'); if(n) $('nameInput').value = n;
     }catch(e){}
   }
   function saveChannels(){ try{ localStorage.setItem('rc_channels', JSON.stringify(channels)); }catch(e){} }
+  function saveUnread(){ try{ localStorage.setItem('rc_unread', JSON.stringify(unreadMap)); }catch(e){} }
   function findChannel(r){ for(var i=0;i<channels.length;i++){ if(channels[i].room===r) return channels[i]; } return null; }
   function addChannel(r, n){
     r = sanitize(r);
@@ -332,6 +402,7 @@
   function removeChannel(r){
     channels = channels.filter(function(c){ return c.room !== r; });
     saveChannels();
+    delete unreadMap[r]; saveUnread();
   }
 
   // ---------- 界面切换 ----------
@@ -340,6 +411,8 @@
     hideAll();
     if(channels.length){ renderChannels(); $('channels').style.display='flex'; }
     else { $('join').style.display='flex'; }
+    // 后台保持监听所有频道，实时统计未读（仅当已有连接或存在频道时）
+    if(channels.length && !client){ connect(); }
   }
   function renderChannels(){
     var list = $('chanList'); list.innerHTML='';
@@ -350,8 +423,15 @@
     channels.forEach(function(ch){
       var card = document.createElement('div'); card.className='chan';
       var info = document.createElement('div'); info.className='chan-info';
-      var t = document.createElement('div'); t.className='chan-title'; t.textContent = ch.room;
-      var s = document.createElement('div'); s.className='chan-sub'; s.textContent = '昵称：' + (ch.name || '—');
+      var t = document.createElement('div'); t.className='chan-title';
+      var tn = document.createElement('span'); tn.textContent = ch.room; t.appendChild(tn);
+      var n = unreadMap[ch.room] || 0;
+      if(n > 0){
+        var badge = document.createElement('span'); badge.className='badge show';
+        badge.textContent = n > 99 ? '99+' : String(n);
+        t.appendChild(badge);
+      }
+      var s = document.createElement('div'); s.className='chan-sub'; s.textContent = '昵称：' + (ch.name || '—') + (n>0 ? ' · ' + n + ' 条未读' : '');
       info.appendChild(t); info.appendChild(s);
       var enter = document.createElement('button'); enter.className='chan-enter'; enter.textContent='进入';
       enter.onclick = function(){ enterChannel(ch.room, ch.name); };
@@ -366,13 +446,18 @@
     room = r; me = n || ($('nameInput').value.trim()) || '我';
     try{ localStorage.setItem('rc_name', me); localStorage.setItem('rc_room', room); }catch(e){}
     hideAll(); $('chat').style.display='flex';
+    inChat = true;
     $('roomTitle').textContent = '频道：' + room;
-    $('msgs').innerHTML=''; onlineSet={};
-    renderHistory(room); // 恢复历史聊天记录
+    $('msgs').innerHTML=''; onlineSet={}; peerReadTs=0; lastRenderedDay='';
+    unreadMap[room] = 0; saveUnread(); renderChannels();
+    renderHistory(room);
+    restoreDraft();
+    clearReply();
+    closeSearch();
     connect();
   }
 
-  // ---------- 连接 / 聊天（保持不变） ----------
+  // ---------- 连接 / 聊天 ----------
   function setStatus(ok, bad, text){
     var s = $('status');
     s.className = 'status' + (ok?' ok':'') + (bad?' bad':'');
@@ -383,17 +468,78 @@
     function p(n){ return (n<10?'0':'')+n; }
     return p(d.getHours())+':'+p(d.getMinutes());
   }
-  function addMsg(from, text, mine, ts, isHistory){
+
+  // 渲染单条消息（含时间分组/引用/已读分隔/搜索高亮）
+  function addMsgEl(m, isHistory, animate){
     var msgs = $('msgs');
+    // 时间分组分隔线
+    if(m.ts){
+      var dk = dayKey(m.ts);
+      if(dk !== lastRenderedDay){
+        lastRenderedDay = dk;
+        var sep = document.createElement('div'); sep.className='date-sep'; sep.textContent = dayLabel(m.ts);
+        msgs.appendChild(sep);
+      }
+    }
     var row = document.createElement('div');
-    row.className = 'row ' + (mine?'me':'other') + (isHistory ? '' : ' enter');
-    if(!mine){ var name = document.createElement('div'); name.className='name'; name.textContent = from; row.appendChild(name); }
-    var b = document.createElement('div'); b.className='bubble'; b.textContent = text;
-    var meta = document.createElement('div'); meta.className='meta'; meta.textContent = fmtTime(ts);
+    row.className = 'row ' + (m.mine?'me':'other') + (animate ? ' enter' : '');
+    row.id = 'row_' + (m.id || genId());
+    if(m.revoked){
+      row.className = 'revoked';
+      row.textContent = (m.mine ? '你' : (m.from||'对方')) + '撤回了一条消息';
+      msgs.appendChild(row);
+      maybeReadSep(msgs, m);
+      return;
+    }
+    if(m.mine){
+      // 已读分隔：对方已读位置
+    } else {
+      var name = document.createElement('div'); name.className='name'; name.textContent = m.from || '对方'; row.appendChild(name);
+    }
+    var b = document.createElement('div'); b.className='bubble';
+    if(m.replyTo){
+      var q = document.createElement('div'); q.className='quote';
+      q.textContent = (m.replyTo.from||'') + '：' + (m.replyTo.text||'');
+      b.appendChild(q);
+    }
+    var txt = document.createElement('span');
+    txt.textContent = m.text;
+    if(searchActive && currentKeyword){ highlight(txt, currentKeyword); }
+    b.appendChild(txt);
+    var meta = document.createElement('div'); meta.className='meta'; meta.textContent = fmtTime(m.ts);
     row.appendChild(b); row.appendChild(meta);
-    msgs.appendChild(row); 
-    if(!isHistory) msgs.scrollTop = msgs.scrollHeight;
+    msgs.appendChild(row);
+    if(!isHistory){ bindLongPress(row, m); }
+    maybeReadSep(msgs, m);
   }
+
+  // 在 ts 不大于 peerReadTs 的最后一条「我发的」消息后插入已读分隔
+  function maybeReadSep(msgs, m){
+    if(!peerReadTs) return;
+    if(m.mine && m.ts && m.ts <= peerReadTs){
+      // 仅当这是最后一条符合条件的 mine 消息时显示
+      var rows = msgs.querySelectorAll('.row.me');
+      if(rows.length){
+        var last = rows[rows.length - 1];
+        if(last.id === 'row_' + (m.id || '')){
+          var sep = document.createElement('div'); sep.className='read-sep'; sep.textContent='对方已读';
+          msgs.appendChild(sep);
+        }
+      }
+    }
+  }
+
+  function highlight(node, kw){
+    if(!node || !node.textContent) return;
+    var idx = node.textContent.toLowerCase().indexOf(kw.toLowerCase());
+    if(idx < 0) return;
+    var tail = node.textContent.slice(idx + kw.length);
+    var mid = document.createElement('mark'); mid.textContent = node.textContent.slice(idx, idx+kw.length);
+    var after = document.createElement('span'); after.textContent = tail;
+    node.textContent = node.textContent.slice(0, idx);
+    node.appendChild(mid); node.appendChild(after);
+  }
+
   function addSys(text){
     var msgs = $('msgs');
     var s = document.createElement('div'); s.className='sys enter'; s.textContent = text;
@@ -406,6 +552,7 @@
   function connect(){
     if(!mqtt){ toast('通信库加载失败'); return; }
     if(client){ try{ client.end(true); }catch(e){} }
+    subscribed = {};
     setStatus(false,false,'连接中…');
     var cid = 'rc_' + Math.random().toString(16).slice(2,10);
     client = mqtt.connect(broker, {
@@ -414,47 +561,112 @@
     });
     client.on('connect', function(){
       setStatus(true,false,'已连接');
-      var t = topicBase(room), pt = presenceTopic(room);
-      client.subscribe(t, {qos:0});
-      client.subscribe(pt, {qos:0});
-      onlineSet[cid] = true;
-      client.publish(pt, JSON.stringify({c:cid, n:me, s:1}), {qos:0});
-      addSys('已加入频道「'+room+'」');
-      updateOnline();
+      subscribeAll();
+      if(inChat){
+        onlineSet[cid] = true;
+        client.publish(presenceTopic(room), JSON.stringify({c:cid, n:me, s:1}), {qos:0});
+        addSys('已加入频道「'+room+'」');
+        updateOnline();
+      }
     });
     client.on('reconnect', function(){ setStatus(false,false,'重连中…'); });
     client.on('offline', function(){ setStatus(false,true,'已断开'); });
     client.on('error', function(e){ setStatus(false,true,'连接错误'); });
     client.on('close', function(){ setStatus(false,true,'已断开'); });
-    client.on('message', function(topic, payload){
-      var raw = payload.toString();
-      if(topic === presenceTopic(room)){
-        try{ var p = JSON.parse(raw); if(p && p.c){ if(p.s){ onlineSet[p.c]=p.n||true; } else { delete onlineSet[p.c]; } updateOnline(); } }catch(e){}
+    client.on('message', onMqttMessage);
+  }
+  // 订阅所有已存频道（用于后台实时未读计数）
+  function subscribeAll(){
+    var rooms = {};
+    channels.forEach(function(c){ rooms[c.room]=true; });
+    if(room) rooms[room]=true;
+    Object.keys(rooms).forEach(function(r){
+      if(subscribed[r]) return;
+      subscribed[r]=true;
+      client.subscribe(topicBase(r), {qos:0});
+      client.subscribe(presenceTopic(r), {qos:0});
+      client.subscribe(readTopic(r), {qos:0});
+    });
+  }
+  function onMqttMessage(topic, payload){
+    var raw = payload.toString();
+    // presence：仅当前聊天频道处理
+    var pm = topic.match(/^roomchat\/(.+?)\/presence$/);
+    if(pm){ if(inChat && pm[1]===room){ try{ var p = JSON.parse(raw); if(p && p.c){ if(p.s){ onlineSet[p.c]=p.n||true; } else { delete onlineSet[p.c]; } updateOnline(); } }catch(e){} } return; }
+    // read receipt：对方发来的已读
+    var rm = topic.match(/^roomchat\/(.+?)\/read$/);
+    if(rm){
+      try{
+        var rd = JSON.parse(raw);
+        if(rd && rd.from && rd.from !== me){
+          if(rd.ts && rd.ts > peerReadTs) peerReadTs = rd.ts;
+          if(rm[1] === room) rerenderReadSep();
+        }
+      }catch(e){}
+      return;
+    }
+    // chat / revoke
+    var cm = topic.match(/^roomchat\/(.+?)$/);
+    if(cm){
+      var rt = cm[1];
+      // 非当前频道，或不在聊天页（在频道列表）→ 该频道未读+1
+      if(rt !== room || !inChat){
+        if(unreadMap[rt] == null) unreadMap[rt] = 0;
+        unreadMap[rt]++; saveUnread(); renderChannels();
         return;
       }
-      if(topic === topicBase(room)){
-        try{
-          var m = JSON.parse(raw);
-          if(m && m.from && m.text!=null){
-            if(m.cid && m.cid === client.options.clientId){ return; } // 过滤自己发出去被回环的消息
-            addMsg(m.from, m.text, false, m.ts);
-            appendHistory(room, m.from, m.text, false, m.ts);
-            Sound.receive();
-          }
-        }catch(e){}
-      }
-    });
+      try{
+        var m = JSON.parse(raw);
+        if(m.type === 'revoke'){ handleRevoke(m); return; }
+        if(m && m.from && m.text != null){
+          if(m.cid && m.cid === client.options.clientId){ return; } // 过滤自己回环
+          var msg = {id:m.id||genId(), from:m.from, text:m.text, mine:false, ts:m.ts||Date.now(), replyTo:m.replyTo};
+          addMsgEl(msg, false, true);
+          appendHistory(room, msg);
+          Sound.receive();
+          sendReadReceipt(m.ts); // 自动发已读回执
+        }
+      }catch(e){}
+    }
+  }
+  function sendReadReceipt(ts){
+    if(client && client.connected && inChat){
+      client.publish(readTopic(room), JSON.stringify({from:me, ts:ts}), {qos:0});
+    }
+  }
+  function handleRevoke(m){
+    // 标记本地历史中对应消息为撤回
+    var h = loadHistory(room);
+    var changed = false;
+    for(var i=0;i<h.length;i++){ if(h[i].id === m.targetId){ h[i].revoked = true; changed = true; break; } }
+    if(changed) saveHistory(room, h);
+    // 更新 DOM
+    var row = $('row_' + m.targetId);
+    if(row){
+      row.className = 'revoked';
+      row.textContent = ((m.from===me)?'你':'对方') + '撤回了一条消息';
+    }
+    toast('一条消息已被撤回');
   }
   function send(){
     var v = $('msgInput').value.trim();
     if(!v) return;
-    addMsg(me, v, true, Date.now());
-    appendHistory(room, me, v, true, Date.now());
+    var msg = {
+      id: genId(), from: me, text: v, mine: true, ts: Date.now(),
+      replyTo: replyTarget ? {from:replyTarget.from, text:replyTarget.text} : null
+    };
+    addMsgEl(msg, false, true);
+    appendHistory(room, msg);
     Sound.send();
     $('msgInput').value = '';
+    clearReply();
+    saveDraft('');
     $('emojiPanel').classList.remove('show');
     if(client && client.connected){
-      client.publish(topicBase(room), JSON.stringify({from:me, text:v, ts:Date.now(), cid:client.options.clientId}), {qos:0});
+      client.publish(topicBase(room), JSON.stringify({
+        type:'chat', id:msg.id, from:me, text:v, ts:msg.ts,
+        cid:client.options.clientId, replyTo: msg.replyTo
+      }), {qos:0});
     }
   }
 
@@ -477,6 +689,7 @@
     var pos = s + e.length;
     inp.focus();
     try{ inp.setSelectionRange(pos, pos); }catch(err){}
+    saveDraft(inp.value);
   }
   function toggleEmoji(){
     var p = $('emojiPanel');
@@ -498,16 +711,20 @@
       localStorage.setItem(histKey(r), JSON.stringify(arr));
     }catch(e){ /* 存储满或隐私模式，静默失败 */ }
   }
-  function appendHistory(r, from, text, mine, ts){
+  function appendHistory(r, m){
     var h = loadHistory(r);
-    h.push({from:from, text:text, mine:mine, ts:ts||0});
+    var rec = {id:m.id, from:m.from, text:m.text, mine:m.mine, ts:m.ts||0, replyTo:m.replyTo, revoked:m.revoked};
+    h.push(rec);
     saveHistory(r, h);
   }
   function clearHistory(r){ try{ localStorage.removeItem(histKey(r)); }catch(e){} }
   function renderHistory(r){
     var h = loadHistory(r);
     if(!h.length) return;
-    h.forEach(function(m){ addMsg(m.from, m.text, m.mine, m.ts, true); });
+    h.forEach(function(m){
+      if(!m.id) m.id = genId();
+      addMsgEl(m, true, false);
+    });
   }
   function fmtTime(ts){
     if(!ts) return nowTime();
@@ -515,6 +732,135 @@
     function p(n){ return (n<10?'0':'')+n; }
     return p(d.getHours())+':'+p(d.getMinutes());
   }
+  function rerenderReadSep(){
+    // 简单重渲染：清空 msgs 重画历史（保留动画前的静态态）
+    var msgs = $('msgs');
+    msgs.innerHTML=''; lastRenderedDay='';
+    var h = loadHistory(room);
+    h.forEach(function(m){ if(!m.id) m.id=genId(); addMsgEl(m, true, false); });
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  // ---------- 长按菜单 ----------
+  var pressTimer = null, pressMoved = false, pressStartX=0, pressStartY=0;
+  function bindLongPress(row, m){
+    row.addEventListener('touchstart', function(e){
+      pressMoved = false;
+      pressStartX = e.touches[0].clientX; pressStartY = e.touches[0].clientY;
+      pressTimer = setTimeout(function(){
+        if(!pressMoved) showCtxMenu(row, m, pressStartX, pressStartY);
+      }, 480);
+    }, {passive:true});
+    row.addEventListener('touchmove', function(e){
+      var dx = Math.abs(e.touches[0].clientX - pressStartX);
+      var dy = Math.abs(e.touches[0].clientY - pressStartY);
+      if(dx > 10 || dy > 10){ pressMoved = true; if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; } }
+    }, {passive:true});
+    row.addEventListener('touchend', function(){
+      if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }
+    });
+    // 桌面端右键菜单
+    row.addEventListener('contextmenu', function(e){
+      e.preventDefault();
+      showCtxMenu(row, m, e.clientX, e.clientY);
+    });
+  }
+  function showCtxMenu(row, m, x, y){
+    if(m.revoked) return;
+    var menu = $('ctxMenu'); menu.innerHTML='';
+    function item(ic, label, fn){
+      var b = document.createElement('button');
+      b.innerHTML = '<span class="ic">'+ic+'</span><span>'+label+'</span>';
+      b.onclick = function(){ hideCtxMenu(); fn(); };
+      menu.appendChild(b);
+    }
+    item('📋','复制', function(){
+      try{ if(navigator.clipboard){ navigator.clipboard.writeText(m.text); } }catch(e){}
+      toast('已复制');
+    });
+    if(m.mine){
+      item('↩️','撤回', function(){ revokeMsg(m); });
+    }
+    item('💬','引用', function(){ setReply(m); });
+    item('🗑️','删除（仅本地）', function(){ deleteLocal(m); });
+    menu.style.left = Math.min(x, window.innerWidth - 175) + 'px';
+    menu.style.top = Math.min(y, window.innerHeight - 240) + 'px';
+    menu.classList.add('show'); $('ctxMask').classList.add('show');
+  }
+  function hideCtxMenu(){ $('ctxMenu').classList.remove('show'); $('ctxMask').classList.remove('show'); }
+  $('ctxMask').addEventListener('click', hideCtxMenu);
+
+  function revokeMsg(m){
+    // 本地标记
+    var h = loadHistory(room);
+    for(var i=0;i<h.length;i++){ if(h[i].id === m.id){ h[i].revoked = true; break; } }
+    saveHistory(room, h);
+    var row = $('row_' + m.id);
+    if(row){ row.className='revoked'; row.textContent = '你撤回了一条消息'; }
+    // 通知对方
+    if(client && client.connected){
+      client.publish(topicBase(room), JSON.stringify({type:'revoke', targetId:m.id, from:me, ts:Date.now(), cid:client.options.clientId}), {qos:0});
+    }
+    toast('已撤回');
+  }
+  function deleteLocal(m){
+    var h = loadHistory(room);
+    h = h.filter(function(x){ return x.id !== m.id; });
+    saveHistory(room, h);
+    var row = $('row_' + m.id);
+    if(row) row.remove();
+    toast('已删除');
+  }
+  function setReply(m){
+    replyTarget = {from:m.from, text:m.text};
+    var rb = $('replyBar');
+    rb.querySelector('.rb-text').textContent = (m.from||'') + '：' + m.text;
+    rb.classList.add('show');
+    $('msgInput').focus();
+  }
+  function clearReply(){ replyTarget = null; $('replyBar').classList.remove('show'); }
+  $('replyClose').onclick = clearReply;
+
+  // ---------- 搜索 ----------
+  function openSearch(){
+    searchActive = true; currentKeyword = '';
+    $('searchBar').classList.add('show');
+    $('searchInput').value=''; $('searchCount').textContent='';
+    $('searchInput').focus();
+    applySearch();
+  }
+  function closeSearch(){
+    searchActive = false; currentKeyword='';
+    $('searchBar').classList.remove('show');
+    if(room) rerenderReadSep();
+  }
+  function applySearch(){
+    currentKeyword = ($('searchInput').value || '').trim();
+    var msgs = $('msgs'); msgs.innerHTML=''; lastRenderedDay='';
+    var h = loadHistory(room);
+    var count = 0;
+    h.forEach(function(m){
+      if(m.revoked) return;
+      if(!currentKeyword || (m.text||'').toLowerCase().indexOf(currentKeyword.toLowerCase()) >= 0){
+        if(currentKeyword && (m.text||'').toLowerCase().indexOf(currentKeyword.toLowerCase()) >= 0) count++;
+        addMsgEl(m, true, false);
+      }
+    });
+    if(currentKeyword){
+      $('searchCount').textContent = count > 0 ? (count + ' 条') : '无结果';
+    } else {
+      $('searchCount').textContent = '';
+    }
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  $('searchBtn').onclick = function(){ if(searchActive) closeSearch(); else openSearch(); };
+  $('searchClose').onclick = closeSearch;
+  $('searchInput').addEventListener('input', applySearch);
+
+  // ---------- 草稿自动保存 ----------
+  function draftKey(r){ return 'rc_draft_' + r; }
+  function saveDraft(v){ try{ if(v) localStorage.setItem(draftKey(room), v); else localStorage.removeItem(draftKey(room)); }catch(e){} }
+  function restoreDraft(){ try{ var d = localStorage.getItem(draftKey(room)); if(d) $('msgInput').value = d; }catch(e){} }
 
   // ---------- 事件 ----------
   $('joinBtn').onclick = function(){
@@ -533,6 +879,7 @@
   };
   $('sendBtn').onclick = send;
   $('msgInput').addEventListener('keydown', function(e){ if(e.key==='Enter'){ send(); } });
+  $('msgInput').addEventListener('input', function(){ saveDraft(this.value); });
   $('emojiBtn').onclick = function(e){ e.stopPropagation(); toggleEmoji(); };
   document.addEventListener('click', function(e){
     var p = $('emojiPanel');
@@ -542,7 +889,7 @@
     }
   });
   $('exitBtn').onclick = function(){
-    if(client){ try{ client.end(true); }catch(e){} }
+    inChat = false; // 退出聊天页，但保留连接以继续后台监听未读
     showHome();
   };
   $('status').onclick = function(){ $('settings').style.display='block'; };
@@ -569,8 +916,6 @@
       box.textContent = '已是最新版本（v' + (res.currentName||'?') + '）。';
     }
   }
-  // installFromModal=true：从「进入App自动弹出的更新弹窗」触发，进度反馈显示在弹窗里；
-  // =false：从「设置→检查更新」触发，进度显示在设置面板内的进度条。
   var installFromModal = false;
   var pendingApkUrl = '';
   var installTimer = null;
@@ -589,7 +934,6 @@
       var pg = $('updProgress'); pg.style.display='block'; pg.firstElementChild.style.width='0%';
     }
     b.installUpdate();
-    // 兜底：1.5 秒后若仍未收到回调（部分 ROM 切后台导致 JS 回调丢失），自动关闭弹窗并提示手动下载
     installTimer = setTimeout(function(){
       if(installCallbackReceived) return;
       if(installFromModal){
@@ -598,7 +942,7 @@
       } else {
         $('updProgress').style.display='none';
       }
-      var ver = ($('aumVer').textContent || '1.2.1');
+      var ver = ($('aumVer').textContent || '1.2.2');
       var url = pendingApkUrl || ('https://gcore.jsdelivr.net/gh/Q9171/weixin@v' + ver + '/wei-' + ver + '.apk');
       toast('浏览器未自动打开，请复制链接手动下载：' + url);
     }, 1500);
@@ -627,7 +971,6 @@
     if(installFromModal){
       var btn = $('aumUpdate');
       if(r === 'ok'){
-        // 下载完成，系统安装器会自己弹出来，这里把弹窗关掉避免挡界面
         $('autoUpdateModal').style.display='none';
         return;
       } else if(r === 'no_apk'){
@@ -662,10 +1005,9 @@
     if(b && b.checkUpdate){ b.checkUpdate(); toast('正在检查…'); }
     else { toast('当前 App 版本不支持'); }
   };
-  // 预填版本号
   setVer();
 
-  // 音效初始化：加载开关 + 首次交互恢复音频 + 按钮轻点音
+  // 音效初始化
   loadSound();
   function resumeAudioOnce(){ Sound.resume(); }
   document.addEventListener('touchend', resumeAudioOnce, {once:true});
@@ -673,7 +1015,7 @@
   document.addEventListener('click', function(e){
     var el = e.target;
     var b = (el && el.closest) ? el.closest('button') : (el && el.tagName === 'BUTTON' ? el : null);
-    if(!b || b.id === 'sendBtn') return; // 发送键有专属音效
+    if(!b || b.id === 'sendBtn') return;
     Sound.tap();
   }, true);
   $('soundToggle').onchange = function(){
@@ -682,7 +1024,7 @@
     try{ localStorage.setItem('rc_sound', on ? '1' : '0'); }catch(e){}
     if(on) Sound.tap();
   };
-  // 聊天背景颜色：浅红/浅蓝/浅紫，选择立即生效并记住
+  // 聊天背景颜色
   function applyChatBg(v){
     document.body.classList.remove('bg-red','bg-blue');
     if(v === 'red') document.body.classList.add('bg-red');
@@ -706,13 +1048,11 @@
       };
     }
   })();
-  // 自动更新弹窗按钮
   $('aumUpdate').onclick = function(){ doInstall(true); };
   $('aumLater').onclick = function(){ $('autoUpdateModal').style.display='none'; };
 
   loadPrefs();
   showHome();
-  // 开启动画：约 1.8 秒后淡出
   setTimeout(function(){ var sp=$('splash'); if(sp){ sp.classList.add('hide'); setTimeout(function(){ sp.style.display='none'; }, 600); } }, 1800);
 })();
 </script>
