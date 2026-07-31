@@ -598,7 +598,8 @@
       } else {
         $('updProgress').style.display='none';
       }
-      var url = pendingApkUrl || 'https://gcore.jsdelivr.net/gh/Q9171/weixin@v' + ($('aumVer').textContent||'1.2.1') + '/wei-1.2.1.apk';
+      var ver = ($('aumVer').textContent || '1.2.1');
+      var url = pendingApkUrl || ('https://gcore.jsdelivr.net/gh/Q9171/weixin@v' + ver + '/wei-' + ver + '.apk');
       toast('浏览器未自动打开，请复制链接手动下载：' + url);
     }, 1500);
   }
