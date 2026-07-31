@@ -1,6 +1,6 @@
 {
-  "versionCode": 22,
-  "versionName": "1.2.1",
-  "note": "v1.2.1 更新：\n• 修复点击「立即更新」后弹窗卡住不跳浏览器的问题\n• 新增超时兜底：浏览器未自动打开时自动关闭弹窗并提示手动下载链接\n• 保留聊天背景颜色设置（浅红/浅蓝/浅紫）与 Android 14 闪退修复",
-  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.2.1/wei-1.2.1.apk"
+  "versionCode": 23,
+  "versionName": "1.2.2",
+  "note": "v1.2.2 更新：\n• 更新检查「发现地址」统一改用 gcore.jsdelivr.net，国内移动网络下更新提示更稳更快（不再偶发收不到更新）\n• 修复手动下载兜底链接写死旧版本号的问题\n• 保留聊天背景颜色设置（浅红/浅蓝/浅紫）与浏览器下载方式",
+  "apkUrl": "https://gcore.jsdelivr.net/gh/Q9171/weixin@v1.2.2/wei-1.2.2.apk"
 }
