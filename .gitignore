@@ -1,0 +1,21 @@
+# Java 构建产物
+*.class
+build/
+bin/
+
+# 签名密钥（不入库）
+*.keystore
+
+# 系统垃圾
+.DS_Store
+Thumbs.db
+*.tmp
+
+# 构建产物 APK（发布由 publish.sh 走 GitHub API 上传，不入库）
+*.apk
+
+# 发版日志
+publish_*.log
+
+# 临时备份
+.opensource_backup/

@@ -40,10 +40,13 @@ d['versionCode'] = int(vc)
 d['versionName'] = vn
 note_lines = [
   'v' + vn + ' 更新：',
-  '• 修复单人频道自己发的消息被当成对方消息回显的问题',
-  '• 聊天记录本地保存，退出频道再进入不丢失',
-  '• 删除频道时同时清除该频道的聊天记录',
-  '• 每频道最多保留500条历史消息'
+  '• 新增未读红点 + 多频道未读计数：后台实时监听所有频道，列表显示「N 条未读」',
+  '• 新增长按消息菜单：复制 / 撤回（仅自己消息）/ 引用 / 删除（仅本地）',
+  '• 新增引用回复：发送时携带被引用的原消息，气泡内显示引用片段',
+  '• 新增消息搜索：聊天页点 🔍 按关键词过滤历史并高亮',
+  '• 新增草稿自动保存：输入框内容随输入留存，再次进入频道自动恢复',
+  '• 新增时间分组（今天/昨天/日期分隔）+ 对方已读分隔线',
+  '• 保留聊天背景颜色设置（浅红/浅蓝/浅紫）与浏览器下载方式'
 ]
 if int(vc) <= 9:
   # v1.0.9 之前保留旧文案兼容
@@ -52,7 +55,7 @@ d['note'] = '\n'.join(note_lines)
 apk_name = 'wei-%s.apk' % vn
 if os.path.exists('app-debug.apk'):
     shutil.copy('app-debug.apk', apk_name)
-d['apkUrl'] = 'https://cdn.jsdelivr.net/gh/Q9171/weixin@v' + vn + '/' + apk_name
+d['apkUrl'] = 'https://gcore.jsdelivr.net/gh/Q9171/weixin@v' + vn + '/' + apk_name
 json.dump(d, open(p, 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
 # 同步到仓库根目录的 version.json —— App 默认读取的就是根目录这个（publish/ 下只是源码备份）
 json.dump(d, open('version.json', 'w', encoding='utf-8'), ensure_ascii=False, indent=2)
